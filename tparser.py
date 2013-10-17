@@ -1,13 +1,14 @@
 class tparser():
 
     def __init__(self, *args, **kwargs):
-        self.infile = args[0]
+        self.infile = open('/Users/jeffblagdon/Desktop/oreilly.torrent')
+        self.tor_str = self.infile.read()
         self.reader = self.readchar()  # instantiate the function
 
     # The generator that walks through the .torrent file
     def readchar(self):
-        tor_str = self.infile.read()
-        for char in tor_str:
+        # tor_str = self.infile.read()
+        for char in self.tor_str:
             yield char
         else:
             self.infile.close()
@@ -69,6 +70,13 @@ class tparser():
             if not val:
                 return this_list
 
+    # The main function. get_val() sets everything in motion.
     def decode(self):
         dict_repr = self.get_val()
         return dict_repr
+
+if __name__ == '__main__':
+    import pudb
+    pudb.set_trace()
+    a = tparser()
+    a.decode()
