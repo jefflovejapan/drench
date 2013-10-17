@@ -1,77 +1,68 @@
-class tparser():
+def readchar(filename):
+    for char in open(filename).read():
+        yield char
 
-    def __init__(self, *args, **kwargs):
-        self.infile = args[0]
-        self.tor_str = self.infile.read()
-        self.reader = self.readchar()  # instantiate the function
 
-    # The generator that walks through the .torrent file's text
-    def readchar(self):
-        # tor_str = self.infile.read()
-        for char in self.tor_str:
-            yield char
-        else:
-            self.infile.close()
+def tparse(filename):
 
-    def get_val(self):
-        i = self.reader.next()
+    def get_val():
+        i = reader.next()
         if i.isdigit():
-            str_len = self.get_len(i)
-            return self.get_str(str_len)
+            str_len = get_len(i)
+            return get_str(str_len)
         if i == 'd':
-            return self.get_dict()
+            return get_dict()
         if i == 'l':
-            return self.get_list()
+            return get_list()
         if i == 'i':
-            return self.get_int()
+            return get_int()
         if i == 'e':
             return None
 
-    def get_len(self, i=''):
+    def get_len(i=''):
         len_str = str(i)
-        next_char = self.reader.next()
+        next_char = reader.next()
         if next_char == 'e':  # The line that collapses the dictionary
             return next_char
         while next_char is not ':':
             len_str += next_char
-            next_char = self.reader.next()
+            next_char = reader.next()
         else:
             return int(len_str)
 
-    def get_dict(self):
+    def get_dict():
         this_dict = {}
         while 1:
-            str_len = self.get_len()
+            str_len = get_len()
             if str_len == 'e':  # This dict is done
                 return this_dict
-            key = self.get_str(str_len)
-            val = self.get_val()
+            key = get_str(str_len)
+            val = get_val()
             this_dict[key] = val
 
-    def get_int(self):
+    def get_int():
         int_str = ''
-        i = self.reader.next()
+        i = reader.next()
         while i is not 'e':
             int_str += i
-            i = self.reader.next()
+            i = reader.next()
         else:
             return int(int_str)
 
-    def get_str(self, str_len):
+    def get_str(str_len):
         this_str = ''
         for i in range(str_len):
-            this_str += self.reader.next()
+            this_str += reader.next()
         return this_str
 
-    def get_list(self):
+    def get_list():
         this_list = []
         while 1:
-            val = self.get_val()
+            val = get_val()
             if not val:
                 return this_list
             this_list.append(val)
 
-    # The main function. get_val() sets everything in motion.
-    def decode(self):
-        dict_repr = self.get_val()
-        return dict_repr
+    reader = readchar(filename)
+    dict_repr = get_val()
+    return dict_repr
