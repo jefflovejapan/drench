@@ -4,6 +4,7 @@ class tparser():
         self.infile = args[0]
         self.reader = self.readchar()  # instantiate the function
 
+    # The generator that walks through the .torrent file
     def readchar(self):
         tor_str = self.infile.read()
         for char in tor_str:
@@ -28,7 +29,7 @@ class tparser():
     def get_len(self, i=''):
         len_str = str(i)
         next_char = self.reader.next()
-        if next_char == 'e':
+        if next_char == 'e':  # The line that collapses the dictionary
             return next_char
         while next_char is not ':':
             len_str += next_char
@@ -40,7 +41,7 @@ class tparser():
         this_dict = {}
         while 1:
             str_len = self.get_len()
-            if str_len == 'e':
+            if str_len == 'e':  # This dict is done
                 return this_dict
             key = self.get_str(str_len)
             val = self.get_val()
