@@ -3,7 +3,7 @@ def readchar(filename):
         yield char
 
 
-def tparse(filename):
+def bdecode(filename):
 
     def get_val():
         i = reader.next()
