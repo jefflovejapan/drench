@@ -1,6 +1,47 @@
-def readchar(filename):
+def _readchar(filename):
     for char in open(filename).read():
         yield char
+
+
+def bencode(in_dict):
+
+    def encode_str(in_str):
+        out_str = str(len(in_str)) + ':' + in_str
+        return out_str
+
+    def encode_int(in_int):
+        out_str = str('i' + str(in_int) + 'e')
+        return out_str
+
+    def encode_list(in_list):
+        out_str = 'l'
+        for item in in_list:
+            out_str += encode_item(item)
+        else:
+            out_str += 'e'
+        return out_str
+
+    def encode_dict(in_dict):
+        out_str = 'd'
+        while in_dict:
+            item = in_dict.popitem()
+            for i in item:
+                out_str += encode_item(i)
+        else:
+            out_str += 'e'
+        return out_str
+
+    def encode_item(x):
+        if isinstance(x, str):
+            return encode_str(x)
+        elif isinstance(x, int):
+            return encode_int(x)
+        elif isinstance(x, list):
+            return encode_list(x)
+        elif isinstance(x, dict):
+            return encode_dict(x)
+
+    return encode_item(in_dict)
 
 
 def bdecode(filename):
@@ -63,6 +104,6 @@ def bdecode(filename):
                 return this_list
             this_list.append(val)
 
-    reader = readchar(filename)
+    reader = _readchar(filename)
     dict_repr = get_val()
     return dict_repr
