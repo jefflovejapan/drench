@@ -3,11 +3,12 @@ def _readchar(bstring):
         yield char
 
 
-def bencode(in_dict):
+def bencode(canonical):
     '''
         Turns a dictionary into a bencoded str with alphabetized keys
         e.g., {'spam': 'eggs', 'cow': 'moo'} --> d3:cow3:moo4:spam4:eggse
     '''
+    in_dict = dict(canonical)
 
     def encode_str(in_str):
         out_str = str(len(in_str)) + ':' + in_str
@@ -27,7 +28,7 @@ def bencode(in_dict):
 
     def encode_dict(in_dict):
         out_str = 'd'
-        keys = in_dict.keys().sorted()
+        keys = sorted(in_dict.keys())
         while in_dict:
             for key in keys:
                 val = in_dict.pop(key)
