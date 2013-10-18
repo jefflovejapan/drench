@@ -1,9 +1,13 @@
-def _readchar(filename):
-    for char in open(filename).read():
+def _readchar(bstring):
+    for char in bstring:
         yield char
 
 
 def bencode(in_dict):
+    '''
+        Turns a dictionary into a bencoded str with alphabetized keys
+        e.g., {'spam': 'eggs', 'cow': 'moo'} --> d3:cow3:moo4:spam4:eggse
+    '''
 
     def encode_str(in_str):
         out_str = str(len(in_str)) + ':' + in_str
@@ -23,12 +27,13 @@ def bencode(in_dict):
 
     def encode_dict(in_dict):
         out_str = 'd'
+        keys = in_dict.keys().sorted()
         while in_dict:
-            item = in_dict.popitem()
-            for i in item:
-                out_str += encode_item(i)
-        else:
-            out_str += 'e'
+            for key in keys:
+                val = in_dict.pop(key)
+                out_str = out_str + encode_item(key) + encode_item(val)
+            else:
+                out_str += 'e'
         return out_str
 
     def encode_item(x):
@@ -44,7 +49,11 @@ def bencode(in_dict):
     return encode_item(in_dict)
 
 
-def bdecode(filename):
+def bdecodes(bstring):
+    '''
+        Bdecodes a bencoded string
+        e.g., d3:cow3:moo4:spam4:eggse -> {'cow': 'moo', 'spam': 'eggs'}
+    '''
 
     def get_val():
         i = reader.next()
@@ -104,6 +113,14 @@ def bdecode(filename):
                 return this_list
             this_list.append(val)
 
-    reader = _readchar(filename)
+    reader = _readchar(bstring)
     dict_repr = get_val()
     return dict_repr
+
+
+def bdecode(filename):
+    '''
+        Bdecodes a .torrent or other bencoded file
+    '''
+    with open(filename) as f:
+        return bdecodes(f.read())
