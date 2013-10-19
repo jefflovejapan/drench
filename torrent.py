@@ -1,22 +1,21 @@
-# Preprocessing of the .torrent performed with bdecode
-
 import requests
 import socket
 import tparser
 import hashlib
 import urllib
-# import pudb
+import argparse
+import pudb
 
 
 class torrent():
 
-    def __init__(self, tdict, port=55308):
+    def __init__(self, torrent_path, port=55308):
+        tdict = tparser.bdecode(torrent_path)
         self.tdict = tdict
         self.port = port
         self.r = None
 
     def get_request(self):
-        # payload = {}
         assert self.tdict['info']
         hashed_info = hashlib.sha1(tparser.bencode(self.tdict['info']))
         hash_string = hashed_info.digest()
@@ -26,7 +25,6 @@ class torrent():
         payload['port'] = self.port
         payload['uploaded'] = 0
         payload['downloaded'] = 0
-        # pudb.set_trace()
         payload['left'] = self.tdict['info']['length']
         payload['numwant'] = 0
         payload['compact'] = 1
@@ -36,8 +34,12 @@ class torrent():
 
 
 def main():
-    tor_dict = tparser.bdecode('torrent.torrent')
-    mytorrent = torrent(tor_dict)
+    pudb.set_trace()
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument('torrent_path')
+    args = argparser.parse_args()  # Getting path from command line
+    torrent_path = args.torrent_path
+    mytorrent = torrent(torrent_path)
     mytorrent.get_request()
     print mytorrent.r.text
     print mytorrent.r
