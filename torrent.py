@@ -4,7 +4,6 @@ import tparser
 import hashlib
 import urllib
 import argparse
-import pudb
 
 
 class torrent():
@@ -14,35 +13,53 @@ class torrent():
         self.tdict = tdict
         self.port = port
         self.r = None
+        self.tresponse = None
+        self.peers = None
 
-    def get_request(self):
-        assert self.tdict['info']
+    def build_payload(self):
+        payload = {}
         hashed_info = hashlib.sha1(tparser.bencode(self.tdict['info']))
         hash_string = hashed_info.digest()
-        payload = {}
         payload['info_hash'] = hash_string
-        payload['peer_id'] = '-TR2820-wa0n562rl3lu'
+        payload['peer_id'] = '-TR2820-wa0n562rl3lu'  # TODO: randomize
         payload['port'] = self.port
         payload['uploaded'] = 0
         payload['downloaded'] = 0
         payload['left'] = self.tdict['info']['length']
-        payload['numwant'] = 0
         payload['compact'] = 1
         payload['supportcrypto'] = 1
+        payload['event'] = 'started'
+        return payload
+
+    def get_peers(self):
+        peer_list = []
+        presponse = str(self.tresponse['peers'])
+        while presponse:
+            pentry = []
+            for i in presponse[0:6]:
+                pentry.append(ord(i))
+            peer_list.append(pentry)
+            presponse = presponse[6:]
+        return peer_list
+
+    def get_request(self):
+        assert self.tdict['info']
+        payload = self.build_payload()
         self.r = requests.get(self.tdict['announce'],
                               params=payload)
+        self.tresponse = tparser.bdecodes(self.r.text.encode('latin-1'))
+        self.peers = self.get_peers()
+        print self.peers
 
 
 def main():
-    pudb.set_trace()
     argparser = argparse.ArgumentParser()
     argparser.add_argument('torrent_path')
     args = argparser.parse_args()  # Getting path from command line
     torrent_path = args.torrent_path
     mytorrent = torrent(torrent_path)
     mytorrent.get_request()
-    print mytorrent.r.text
-    print mytorrent.r
+    print mytorrent.r.text.encode('latin-1')
 
 
 if __name__ == '__main__':
