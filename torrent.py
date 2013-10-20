@@ -33,12 +33,10 @@ class torrent():
 
     def get_peers(self):
         peer_list = []
-        presponse = str(self.tresponse['peers'])
+        presponse = [str(ord(i)) for i in self.tresponse['peers']]
         while presponse:
-            pentry = []
-            for i in presponse[0:6]:
-                pentry.append(ord(i))
-            peer_list.append(pentry)
+            peer = ('.'.join(presponse[0:4]), ''.join(presponse[4:6]))
+            peer_list.append(peer)
             presponse = presponse[6:]
         return peer_list
 
