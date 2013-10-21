@@ -4,6 +4,8 @@ import tparser
 import hashlib
 import urllib
 import argparse
+import struct
+import pudb
 
 
 class torrent():
@@ -15,13 +17,16 @@ class torrent():
         self.r = None
         self.tresponse = None
         self.peers = None
+        self.hash_string = None
+        self.shake = None
 
     def build_payload(self):
         payload = {}
         hashed_info = hashlib.sha1(tparser.bencode(self.tdict['info']))
-        hash_string = hashed_info.digest()
-        payload['info_hash'] = hash_string
-        payload['peer_id'] = '-TR2820-wa0n562rl3lu'  # TODO: randomize
+        self.hash_string = hashed_info.digest()
+        self.peer_id = '-TR2820-wa0n562rl3lu'  # TODO: randomize
+        payload['info_hash'] = self.hash_string
+        payload['peer_id'] = self.peer_id
         payload['port'] = self.port
         payload['uploaded'] = 0
         payload['downloaded'] = 0
@@ -35,10 +40,24 @@ class torrent():
         peer_list = []
         presponse = [str(ord(i)) for i in self.tresponse['peers']]
         while presponse:
-            peer = ('.'.join(presponse[0:4]), ''.join(presponse[4:6]))
+            peer = '.'.join(presponse[0:4]) + ':' + ''.join(presponse[4:6])
             peer_list.append(peer)
             presponse = presponse[6:]
         return peer_list
+
+    def handshake(self):
+        pstr = 'BitTorrent protocol'
+        pstrlen = len(pstr)
+        reserved = '00000000'
+        info_hash = self.hash_string
+        peer_id = self.peer_id
+        pudb.set_trace()
+        packet = ''.join([struct.pack('b', pstrlen), pstr,
+                 ''.join([chr(int(i)) for i in reserved]), info_hash,
+                 peer_id])
+        self.session = requests.Session()
+        self.session.get('http://{}'.format(self.peers[1]))
+        self.session.send(packet)
 
     def get_request(self):
         assert self.tdict['info']
@@ -47,7 +66,6 @@ class torrent():
                               params=payload)
         self.tresponse = tparser.bdecodes(self.r.text.encode('latin-1'))
         self.peers = self.get_peers()
-        print self.peers
 
 
 def main():
@@ -58,6 +76,8 @@ def main():
     mytorrent = torrent(torrent_path)
     mytorrent.get_request()
     print mytorrent.r.text.encode('latin-1')
+    mytorrent.handshake()
+    print mytorrent.shake.text
 
 
 if __name__ == '__main__':
