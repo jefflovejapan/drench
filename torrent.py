@@ -46,15 +46,29 @@ class torrent():
             presponse = presponse[6:]
 
     def download(self, psocket):
-        pudb.set_trace()
+        # pudb.set_trace()
         print 'downloading from peer {}'.format(psocket.getpeername())
         psocket.setblocking(False)
-        psocket.send(struct.pack('bbbb', 0, 0, 0, 1) + '1')
-        response = psocket.recv(10000)
-        psocket.send(struct.pack('bbbb', 0, 0, 1, 3) + '6' + '0' + '0' +
-                     str(2**14))
-        response = psocket.recv(2**14)
-        print 'The length of the response is {}'.format(len(response))
+        while True:
+            '''
+            "Unchoke" message
+            len = 0001
+            id = 2
+            '''
+            psocket.send(struct.pack('>ib', 1, 1))
+            unresponse = psocket.recv(1000)
+            print unresponse
+
+            '''
+            "Request" message
+            len = 0013
+            id = 6
+            index = whatever 0-based piece index
+            begin = whatever 0-based block within piece to start at
+            '''
+            psocket.send(struct.pack('>ibii', 13, 6, 0, 0))
+            response = psocket.recv(2**14)
+            print 'The length of the response is {}'.format(len(response))
 
     def nextpeer(self):
         pass
@@ -62,23 +76,32 @@ class torrent():
     def handshake_peers(self):
         pstr = 'BitTorrent protocol'
         pstrlen = len(pstr)
-        reserved = '00000000'
         info_hash = self.hash_string
         peer_id = self.peer_id
+
+        '''
+        pstrlen = length of pstr as one byte
+        pstr = BitTorrent protocol
+        reserved = chr(0)*8
+        info_hash = 20-byte hash above (aka self.hash_string)
+        peer_id = 20-byte string
+        '''
+        packet = ''.join([chr(pstrlen), pstr, chr(0)*8, info_hash, peer_id])
+        print "Here's my packet {}".format(packet)
         for i in self.peers:
-            print i
-            packet = ''.join([struct.pack('b', pstrlen), pstr,
-                     ''.join([chr(int(j)) for j in reserved]), info_hash,
-                     peer_id])
+            print i  # just want to see who i'm talking to
+
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(0.5)
             try:
                 s.connect(i)
                 s.send(packet)
-                data = s.recv(68)
-                bitfield = s.recv(15)
+                data = s.recv(68)  # Peer's handshake back (length from docs)
+                bitfield = s.recv(15)  # Peer's bitfield, hopefully
                 print 'inside handshake len of data is {}'.format(len(data))
-                print str(len(bitfield[:4])) + bitfield[5:]
+                print 'length of bitfield is {}. Here it is: {}'.format(
+                      (struct.unpack('>i', bitfield[:4])),
+                      [chr(ord(j)) for j in bitfield[4:]])
                 if self.hash_string in data:
                     self.download(s)
             except socket.timeout:
