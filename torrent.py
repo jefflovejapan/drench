@@ -8,7 +8,6 @@ import select
 import time
 import pudb
 import processor
-import tpeer
 
 
 class torrent():
@@ -16,6 +15,8 @@ class torrent():
     def __init__(self, torrent_path, port=55308):
         tdict = tparser.bdecode(torrent_path)
         self.tdict = tdict
+        self.peerdict = {}
+        self.peers = []
         self.port = port
         self.r = None
         self.tresponse = None
@@ -51,30 +52,6 @@ class torrent():
                 self.peers.append(peer)
             presponse = presponse[6:]
 
-    def download(self, psocket):
-        # pudb.set_trace()
-        print 'downloading from peer {}'.format(psocket.getpeername())
-        while True:
-            '''
-            "Unchoke" message
-            len = 0001
-            id = 2
-            '''
-            psocket.send(struct.pack('>ib', 1, 1))
-            unresponse = psocket.recv(1000)
-            print unresponse
-
-            '''
-            "Request" message
-            len = 0013
-            id = 6
-            index = whatever 0-based piece index
-            begin = whatever 0-based block within piece to start at
-            '''
-            psocket.send(struct.pack('>ibii', 13, 6, 0, 0))
-            response = psocket.recv(2**14)
-            print 'The length of the response is {}'.format(len(response))
-
     def get_message_length(self, psocket):
         length = struct.unpack('>i', psocket.recv(4))[0]
         return length
@@ -87,23 +64,77 @@ class torrent():
             self.save_state(psocket, message, length)
 
     def get_message_id(self, psocket):
-        message_id = struct.unpack('b', psocket.recv(1))
+        message_id = struct.unpack('b', psocket.recv(1))[0]
         return message_id
 
     def event_loop(self):
         while 1:
             rrlist, rwlist, rxlist = select.select(self.rlist, self.wlist,
                                                    self.xlist)
-            print rrlist, rwlist, rxlist
-            for i in rrlist:
-                message_length = self.get_message_length(i)
-                message_id = self.get_message_id(i)
-                message = self.get_message(i, message_length-1)
-                self.handle_message(message_id, message)
+            if rrlist:
+                self.do_reads(rrlist)
+            if rwlist:
+                self.do_writes(rwlist)
+            if rxlist:
+                self.handle_exceptions(rxlist)
+            time.sleep(0.1)
 
-            time.sleep(1)
+    def do_reads(self, rrlist):
+        for i in rrlist:
+            message_length = self.get_message_length(i)
+            message_id = self.get_message_id(i)
+            message = self.get_message(i, message_length-1)
+            self.handle_message(i, message_id, message)
 
-    def handle_message(self, message_id, message):
+    def handle_message(self, i, message_id, message):
+        if message_id == 0:
+            self.pchoke(i)
+        elif message_id == 1:
+            self.punchoke(i)
+        elif message_id == 2:
+            self.pinterested(i)
+        elif message_id == 3:
+            self.pnotinterested(i)
+        elif message_id == 4:
+            self.phave(i, message)
+        elif message_id == 5:
+            self.pbitfield(i, message)
+        elif message_id == 6:
+            self.prequest(i, message)
+        elif message_id == 7:
+            self.ppiece(i, message)
+        elif message_id == 8:
+            self.pcancel(i, message)
+        elif message_id == 9:
+            pass
+
+    def pchoke(self, i):
+        pass
+
+    def punchoke(self, i):
+        pass
+
+    def pinterested(self, i):
+        pass
+
+    def pnotinterested(self, i):
+        pass
+
+    def phave(self, i, message):
+        pass
+
+    def pbitfield(self, i, message):
+        self.peerdict[i]['bitfield'] = message
+        print '''Length of bitfield * 4: {}
+                 Length of otherthing: {}'''.format(len(message)*4, 'brf')
+
+    def prequest(self, i, message):
+        pass
+
+    def ppiece(self, i, message):
+        pass
+
+    def pcancel(self, i, message):
         pass
 
     def save_state(self, psocket, message, length):
@@ -137,10 +168,15 @@ class torrent():
                 if data:
                     s.setblocking(False)
                     self.rlist.append(s)
+                    self.track_peer(s)
             except socket.timeout:
                 print 'timed out'
         else:
             self.event_loop()
+
+    def track_peer(self, psocket):
+        if psocket not in self.peerdict.keys():
+            self.peerdict[psocket] = {}
 
     def tracker_request(self):
         assert self.tdict['info']
