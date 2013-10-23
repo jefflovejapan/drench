@@ -8,6 +8,7 @@ import select
 import time
 import pudb
 import processor
+from bitarray import bitarray
 
 
 class torrent():
@@ -108,33 +109,39 @@ class torrent():
         elif message_id == 9:
             pass
 
-    def pchoke(self, i):
+    def pchoke(self, psocket):
         pass
 
-    def punchoke(self, i):
+    def punchoke(self, psocket):
         pass
 
-    def pinterested(self, i):
+    def pinterested(self, psocket):
         pass
 
-    def pnotinterested(self, i):
+    def pnotinterested(self, psocket):
         pass
 
-    def phave(self, i, message):
+    def phave(self, psocket, message):
+        # pudb.set_trace()
+        # Need index [0] because unpack returns tuple
+        self.peerdict[psocket]['bitfield'][struct.unpack('>i',
+                                           message)[0]] = True
+        print self.peerdict[psocket]['bitfield']
+
+    def pbitfield(self, psocket, message):
+        bitfield = bitarray()
+        bitfield.frombytes(message)
+        print bitfield
+        print len(bitfield), len(message)
+        self.peerdict[psocket]['bitfield'] = bitfield
+
+    def prequest(self, psocket, message):
         pass
 
-    def pbitfield(self, i, message):
-        self.peerdict[i]['bitfield'] = message
-        print '''Length of bitfield * 4: {}
-                 Length of otherthing: {}'''.format(len(message)*4, 'brf')
-
-    def prequest(self, i, message):
+    def ppiece(self, psocket, message):
         pass
 
-    def ppiece(self, i, message):
-        pass
-
-    def pcancel(self, i, message):
+    def pcancel(self, psocket, message):
         pass
 
     def save_state(self, psocket, message, length):
@@ -163,7 +170,10 @@ class torrent():
             try:
                 s.connect(i)
                 s.send(packet)
-                data = s.recv(68)  # Peer's handshake back (length from docs)
+                try:
+                    data = s.recv(68)  # Peer's handshake back (len from docs)
+                except socket.error as e:
+                    print e.text
                 print 'From {} received: {}'.format(i, data)
                 if data:
                     s.setblocking(False)
@@ -173,6 +183,7 @@ class torrent():
         else:
             self.event_loop()
 
+    # TODO -- add call to this for any new peers I get from tracker
     def initpeer(self, s):
         self.rlist.append(s)  # I'm adding to my rlist for event loop
         self.track_peer(s)  # But I'm also adding to peerdict.
