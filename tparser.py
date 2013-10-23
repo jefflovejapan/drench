@@ -74,7 +74,7 @@ def bdecodes(bstring):
         len_str = str(i)
         next_char = reader.next()
         if next_char == 'e':  # The line that collapses the dictionary
-            return next_char
+            return None
         while next_char is not ':':
             len_str += next_char
             next_char = reader.next()
@@ -85,7 +85,7 @@ def bdecodes(bstring):
         this_dict = {}
         while 1:
             str_len = get_len()
-            if str_len == 'e':  # This dict is done
+            if str_len is None:  # This dict is done
                 return this_dict
             key = get_str(str_len)
             val = get_val()
