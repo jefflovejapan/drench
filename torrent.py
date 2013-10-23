@@ -2,9 +2,10 @@ import requests
 import socket
 import tparser
 import hashlib
-import urllib
 import argparse
 import struct
+import select
+import time
 import pudb
 
 
@@ -18,7 +19,9 @@ class torrent():
         self.tresponse = None
         self.peers = []
         self.hash_string = None
-        self.shake = None
+        self.rlist = []  # Sockets to check for avail reads
+        self.wlist = []  # Sockets to check for avail writes
+        self.xlist = []  # Sockets to check for exceptions (?)
 
     def build_payload(self):
         payload = {}
@@ -48,7 +51,6 @@ class torrent():
     def download(self, psocket):
         # pudb.set_trace()
         print 'downloading from peer {}'.format(psocket.getpeername())
-        psocket.setblocking(False)
         while True:
             '''
             "Unchoke" message
@@ -70,8 +72,33 @@ class torrent():
             response = psocket.recv(2**14)
             print 'The length of the response is {}'.format(len(response))
 
-    def nextpeer(self):
-        pass
+    def get_message_length(self, psocket):
+        length = struct.unpack('>i', psocket.recv(4))[0]
+        return length
+
+    def get_message(self, psocket, length):
+        message = psocket.recv(length)
+        return message
+
+    def get_message_id(self, psocket):
+        message_id = struct.unpack('b', psocket.recv(1))
+        return message_id
+
+    def event_loop(self):
+        while 1:
+            rrlist, rwlist, rxlist = select.select(self.rlist, self.wlist,
+                                                   self.xlist)
+            print rrlist, rwlist, rxlist
+            for i in rrlist:
+                message_length = self.get_message_length(i)
+                message_id = self.get_message_id(i)
+                message_length -= 1  # We consumed a byte getting the id
+                if message_length:
+                    message = self.get_message(i, message_length)
+                    print ("{}-byte message from {} with id {}: "
+                           "{}").format(message_length, i.getsockname(),
+                                        message_id, message)
+            time.sleep(1)
 
     def handshake_peers(self):
         pstr = 'BitTorrent protocol'
@@ -90,25 +117,34 @@ class torrent():
         print "Here's my packet {}".format(packet)
         for i in self.peers:
             print i  # just want to see who i'm talking to
-
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.setblocking(True)
             s.settimeout(0.5)
             try:
                 s.connect(i)
                 s.send(packet)
                 data = s.recv(68)  # Peer's handshake back (length from docs)
-                bitfield = s.recv(15)  # Peer's bitfield, hopefully
-                print 'inside handshake len of data is {}'.format(len(data))
-                print 'length of bitfield is {}. Here it is: {}'.format(
-                      (struct.unpack('>i', bitfield[:4])),
-                      [chr(ord(j)) for j in bitfield[4:]])
-                if self.hash_string in data:
-                    self.download(s)
+                print 'From {} received: {}'.format(i, data)
+                if data:
+                    s.setblocking(False)
+                    self.rlist.append(s)
             except socket.timeout:
-                print 'connection to peer {} timed out'.format(i)
-                pass
+                print 'timed out'
+        else:
+            self.event_loop()
 
-    def get_request(self):
+            #     bitfield = s.recv(1000)  # Peer's bitfield, hopefully
+            #     print 'inside handshake len of data is {}'.format(len(data))
+            #     print 'length of bitfield is {}. Here it is: {}'.format(
+            #           (struct.unpack('>i', bitfield[:4])),
+            #           [chr(ord(j)) for j in bitfield[4:]])
+            #     if self.hash_string in data:
+            #         self.download(s)
+            # except socket.timeout:
+            #     print 'connection to peer {} timed out'.format(i)
+            #     pass
+
+    def tracker_request(self):
         assert self.tdict['info']
         payload = self.build_payload()
         self.r = requests.get(self.tdict['announce'],
@@ -124,7 +160,7 @@ def main():
     args = argparser.parse_args()  # Getting path from command line
     torrent_path = args.torrent_path
     mytorrent = torrent(torrent_path)
-    mytorrent.get_request()
+    mytorrent.tracker_request()
     mytorrent.handshake_peers()
 
 
