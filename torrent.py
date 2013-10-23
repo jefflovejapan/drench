@@ -167,12 +167,16 @@ class torrent():
                 print 'From {} received: {}'.format(i, data)
                 if data:
                     s.setblocking(False)
-                    self.rlist.append(s)
-                    self.track_peer(s)
+                    self.initpeer(s)
             except socket.timeout:
                 print 'timed out'
         else:
             self.event_loop()
+
+    def initpeer(self, s):
+        self.rlist.append(s)  # I'm adding to my rlist for event loop
+        self.track_peer(s)  # But I'm also adding to peerdict.
+        self.punchoke(s)  # Otherwise they won't send me anything (?)
 
     def track_peer(self, psocket):
         if psocket not in self.peerdict.keys():
