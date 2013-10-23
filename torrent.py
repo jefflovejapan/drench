@@ -16,7 +16,7 @@ class torrent():
         self.port = port
         self.r = None
         self.tresponse = None
-        self.peers = None
+        self.peers = []
         self.hash_string = None
         self.shake = None
 
@@ -37,35 +37,62 @@ class torrent():
         return payload
 
     def get_peers(self):
-        peer_list = []
-        presponse = [str(ord(i)) for i in self.tresponse['peers']]
+        presponse = [ord(i) for i in self.tresponse['peers']]
         while presponse:
-            peer = '.'.join(presponse[0:4]) + ':' + ''.join(presponse[4:6])
-            peer_list.append(peer)
+            peer = (('.'.join(str(x) for x in presponse[0:4]), 256*presponse[4]
+                     + presponse[5]))
+            if peer not in self.peers:
+                self.peers.append(peer)
             presponse = presponse[6:]
-        return peer_list
 
-    def handshake(self):
+    def download(self, psocket):
+        pudb.set_trace()
+        print 'downloading from peer {}'.format(psocket.getpeername())
+        psocket.setblocking(False)
+        psocket.send(struct.pack('bbbb', 0, 0, 0, 1) + '1')
+        response = psocket.recv(10000)
+        psocket.send(struct.pack('bbbb', 0, 0, 1, 3) + '6' + '0' + '0' +
+                     str(2**14))
+        response = psocket.recv(2**14)
+        print 'The length of the response is {}'.format(len(response))
+
+    def nextpeer(self):
+        pass
+
+    def handshake_peers(self):
         pstr = 'BitTorrent protocol'
         pstrlen = len(pstr)
         reserved = '00000000'
         info_hash = self.hash_string
         peer_id = self.peer_id
-        pudb.set_trace()
-        packet = ''.join([struct.pack('b', pstrlen), pstr,
-                 ''.join([chr(int(i)) for i in reserved]), info_hash,
-                 peer_id])
-        self.session = requests.Session()
-        self.session.get('http://{}'.format(self.peers[1]))
-        self.session.send(packet)
+        for i in self.peers:
+            print i
+            packet = ''.join([struct.pack('b', pstrlen), pstr,
+                     ''.join([chr(int(j)) for j in reserved]), info_hash,
+                     peer_id])
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(0.5)
+            try:
+                s.connect(i)
+                s.send(packet)
+                data = s.recv(68)
+                bitfield = s.recv(15)
+                print 'inside handshake len of data is {}'.format(len(data))
+                print str(len(bitfield[:4])) + bitfield[5:]
+                if self.hash_string in data:
+                    self.download(s)
+            except socket.timeout:
+                print 'connection to peer {} timed out'.format(i)
+                pass
 
     def get_request(self):
         assert self.tdict['info']
         payload = self.build_payload()
         self.r = requests.get(self.tdict['announce'],
                               params=payload)
+        print len(self.r.text)
         self.tresponse = tparser.bdecodes(self.r.text.encode('latin-1'))
-        self.peers = self.get_peers()
+        self.get_peers()
 
 
 def main():
@@ -75,9 +102,7 @@ def main():
     torrent_path = args.torrent_path
     mytorrent = torrent(torrent_path)
     mytorrent.get_request()
-    print mytorrent.r.text.encode('latin-1')
-    mytorrent.handshake()
-    print mytorrent.shake.text
+    mytorrent.handshake_peers()
 
 
 if __name__ == '__main__':
