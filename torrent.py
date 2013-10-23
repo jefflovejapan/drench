@@ -15,6 +15,7 @@ class torrent():
 
     def __init__(self, torrent_path, port=55308):
         tdict = tparser.bdecode(torrent_path)
+        # pudb.set_trace()
         self.tdict = tdict
         self.peerdict = {}
         self.peers = []
@@ -78,6 +79,9 @@ class torrent():
                 self.do_writes(rwlist)
             if rxlist:
                 self.handle_exceptions(rxlist)
+            for psocket in self.peerdict.keys():
+                self.request(psocket)
+            self.processor.run_all()
             time.sleep(0.1)
 
     def do_reads(self, rrlist):
@@ -110,18 +114,23 @@ class torrent():
             pass
 
     def pchoke(self, psocket):
+        print 'pchoke'
         pass
 
     def punchoke(self, psocket):
+        print 'punchoke'
         pass
 
     def pinterested(self, psocket):
+        print 'pinterested'
         pass
 
     def pnotinterested(self, psocket):
+        print 'pnotinterested'
         pass
 
     def phave(self, psocket, message):
+        print 'phave'
         # pudb.set_trace()
         # Need index [0] because unpack returns tuple
         self.peerdict[psocket]['bitfield'][struct.unpack('>i',
@@ -129,6 +138,7 @@ class torrent():
         print self.peerdict[psocket]['bitfield']
 
     def pbitfield(self, psocket, message):
+        print 'pbitfield'
         bitfield = bitarray()
         bitfield.frombytes(message)
         print bitfield
@@ -136,16 +146,30 @@ class torrent():
         self.peerdict[psocket]['bitfield'] = bitfield
 
     def prequest(self, psocket, message):
-        pass
+        print 'prequest'
 
     def ppiece(self, psocket, message):
-        pass
+        print 'ppiece'
 
     def pcancel(self, psocket, message):
-        pass
+        print 'pcancel'
 
     def save_state(self, psocket, message, length):
-        pass
+        print 'save_state'
+
+    def unchoke(self, psocket):
+        message = struct.pack('>ib', 1, 1)
+        print 'sending unchoke message {}'.format(message.encode('latin-1'))
+        psocket.send(message)
+
+    def interested(self, psocket):
+        message = struct.pack('>ib', 1, 2)
+        print 'sending interested message {}'.format(message.encode('latin-1'))
+
+    def request(self, psocket):
+        message = struct.pack('ibiii', 13, 6, 0, 0,
+                              self.tdict['info']['piece length'])
+        psocket.send(message)
 
     def handshake_peers(self):
         pstr = 'BitTorrent protocol'
@@ -172,12 +196,13 @@ class torrent():
                 s.send(packet)
                 try:
                     data = s.recv(68)  # Peer's handshake back (len from docs)
+                    if data:
+                        print 'From {} received: {}'.format(i, data)
+                        s.setblocking(False)
+                        self.initpeer(s)
                 except socket.error as e:
-                    print e.text
-                print 'From {} received: {}'.format(i, data)
-                if data:
-                    s.setblocking(False)
-                    self.initpeer(s)
+                    print e.message
+
             except socket.timeout:
                 print 'timed out'
         else:
@@ -187,7 +212,8 @@ class torrent():
     def initpeer(self, s):
         self.rlist.append(s)  # I'm adding to my rlist for event loop
         self.track_peer(s)  # But I'm also adding to peerdict.
-        self.punchoke(s)  # Otherwise they won't send me anything (?)
+        self.interested(s)
+        self.unchoke(s)  # Otherwise they won't send me anything (?)
 
     def track_peer(self, psocket):
         if psocket not in self.peerdict.keys():
