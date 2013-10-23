@@ -7,6 +7,8 @@ import struct
 import select
 import time
 import pudb
+import processor
+import tpeer
 
 
 class torrent():
@@ -17,11 +19,12 @@ class torrent():
         self.port = port
         self.r = None
         self.tresponse = None
-        self.peers = []
+        self.peerdict = {}
         self.hash_string = None
         self.rlist = []  # Sockets to check for avail reads
         self.wlist = []  # Sockets to check for avail writes
         self.xlist = []  # Sockets to check for exceptions (?)
+        self.processor = processor.processor()
 
     def build_payload(self):
         payload = {}
@@ -78,7 +81,10 @@ class torrent():
 
     def get_message(self, psocket, length):
         message = psocket.recv(length)
-        return message
+        if len(message) == length:
+            return message
+        else:
+            self.save_state(psocket, message, length)
 
     def get_message_id(self, psocket):
         message_id = struct.unpack('b', psocket.recv(1))
@@ -92,13 +98,16 @@ class torrent():
             for i in rrlist:
                 message_length = self.get_message_length(i)
                 message_id = self.get_message_id(i)
-                message_length -= 1  # We consumed a byte getting the id
-                if message_length:
-                    message = self.get_message(i, message_length)
-                    print ("{}-byte message from {} with id {}: "
-                           "{}").format(message_length, i.getsockname(),
-                                        message_id, message)
+                message = self.get_message(i, message_length-1)
+                self.handle_message(message_id, message)
+
             time.sleep(1)
+
+    def handle_message(self, message_id, message):
+        pass
+
+    def save_state(self, psocket, message, length):
+        pass
 
     def handshake_peers(self):
         pstr = 'BitTorrent protocol'
@@ -132,17 +141,6 @@ class torrent():
                 print 'timed out'
         else:
             self.event_loop()
-
-            #     bitfield = s.recv(1000)  # Peer's bitfield, hopefully
-            #     print 'inside handshake len of data is {}'.format(len(data))
-            #     print 'length of bitfield is {}. Here it is: {}'.format(
-            #           (struct.unpack('>i', bitfield[:4])),
-            #           [chr(ord(j)) for j in bitfield[4:]])
-            #     if self.hash_string in data:
-            #         self.download(s)
-            # except socket.timeout:
-            #     print 'connection to peer {} timed out'.format(i)
-            #     pass
 
     def tracker_request(self):
         assert self.tdict['info']
