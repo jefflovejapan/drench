@@ -5,12 +5,23 @@ import time
 import pudb
 
 
+# TODO - add server socket to select call (if self.sock)
 class Reactor(object):
     def __init__(self):
         self.subscribed = defaultdict(list)
         self.sock = socket.socket()
+
+        # Tells OS we want to use this socket again
+        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
         self.sock.bind(('127.0.0.1', 7005))
-        self.read_list = []
+
+        # Adding server socket to read_list to check for new connections
+        # in same call to select inside event loop
+        self.read_list = [self.sock]
+
+        self.sock.listen(5)
+        print 'Listening on 127.0.0.1:7005'
 
     def subscribe(self, callback, event):
         self.subscribed[event].append(callback)  # Add our callbacks here
@@ -22,29 +33,37 @@ class Reactor(object):
 
     def read(self, sock):
         def read_clos():
+            print sock.getsockname()
             f = sock.recv(100)
-            print "Here's what we received: {}".format(f)
+            print ("Here's what we received at time {} from {}"
+                   ": {}").format(time.clock(), sock.fileno(), f)
+            self.subscribed['read'].remove(read_clos)
+            print self.subscribed['read']
+        read_clos.__name__ = "closure that reads on {}".format(repr(sock))
         return read_clos
 
     def event_loop(self):
         while 1:
-            self.sock.listen(5)
-            newsocket, addr = self.sock.accept()     # Get a client, any client
-            newsocket.setblocking(False)
-            self.read_list.append(newsocket)         # Add to read_list
             rrlist, _, _ = select.select(self.read_list, [], [])
-            if rrlist:
-                for i in rrlist:                # ready to read
+            for i in rrlist:  # Doesn't require if test
+                if i == self.sock:
+
+                    # Get each client waiting to connect
+                    newsocket, addr = self.sock.accept()
+                    self.read_list.append(newsocket)
+                else:
                     clos = self.read(i)
                     self.subscribed['read'].append(clos)
-            time.sleep(2)
-            for func in self.subscribed['read']:
-                func()
+            self.trigger('read')
+
+        '''
+        You only want to call the callbacks if the events actually happened.
+        Manage everything by timing / coordinating the callbacks.
+        '''
 
 
 def main():
     reactor = Reactor()
-
     reactor.event_loop()
 
 if __name__ == '__main__':
