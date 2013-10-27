@@ -5,7 +5,6 @@ import time
 import pudb
 
 
-# TODO - add server socket to select call (if self.sock)
 class Reactor(object):
     def __init__(self):
         self.subscribed = defaultdict(list)
@@ -19,7 +18,6 @@ class Reactor(object):
         # Adding server socket to read_list to check for new connections
         # in same call to select inside event loop
         self.read_list = [self.sock]
-
         self.sock.listen(5)
         print 'Listening on 127.0.0.1:7005'
 
