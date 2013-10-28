@@ -118,38 +118,45 @@ class peer():
         self.save_state['message_id'] = struct.unpack('b', instr[0])
         return instr[1:]
 
-    # TODO -- finish this
-    def get_message(self, isntr):
+    def get_message(self, instr):
+        # Since one byte is getting used up for the message_id
+        message_length = self.save_state['message_length'] - 1
         if self.save_state['remainder']:
             instr = self.save_state['remainder'] + instr
-        if len(instr) >= tktk:
-            self.save_state['message'] = tktk
+        if len(instr) >= message_length:
+            self.save_state['message'] = instr[:message_length]
+            instr = instr[message_length:]
+
+            # When we get a whole message we handle it, then
+            # zero out all our state variables
+            self.handle_message()
+            self.save_state['message'] = None
+            self.save_state['message_id'] = None
             return instr
         else:
-            tktk
+            self.save_state['remainder'] += instr
+            return None
 
-        
-
-    def handle_message(self, i, message_id, message):
-        if message_id == 0:
-            self.pchoke(i)
-        elif message_id == 1:
-            self.punchoke(i)
-        elif message_id == 2:
-            self.pinterested(i)
-        elif message_id == 3:
-            self.pnotinterested(i)
-        elif message_id == 4:
-            self.phave(i, message)
-        elif message_id == 5:
-            self.pbitfield(i, message)
-        elif message_id == 6:
-            self.prequest(i, message)
-        elif message_id == 7:
-            self.ppiece(i, message)
-        elif message_id == 8:
-            self.pcancel(i, message)
-        elif message_id == 9:
+    def handle_message(self):
+        if self.save_state['message_id'] == 0:
+            self.pchoke()
+        elif self.save_state['message_id'] == 1:
+            self.punchoke()
+        elif self.save_state['message_id'] == 2:
+            self.pinterested()
+        elif self.save_state['message_id'] == 3:
+            self.pnotinterested()
+        elif self.save_state['message_id'] == 4:
+            self.phave()
+        elif self.save_state['message_id'] == 5:
+            self.pbitfield()
+        elif self.save_state['message_id'] == 6:
+            self.prequest()
+        elif self.save_state['message_id'] == 7:
+            self.ppiece()
+        elif self.save_state['message_id'] == 8:
+            self.pcancel()
+        elif self.save_state['message_id'] == 9:
             pass
 
     def save_state(self, psocket, message, length):
