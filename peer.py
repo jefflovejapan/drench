@@ -7,10 +7,11 @@ class peer():
     # takes place using socket before peer init
     def __init__(self, sock, reactor, data):
         self.sock = sock
-        # self.sock.setblocking(False)
+        self.sock.setblocking(False)
         self.reactor = reactor
         self.save_state = {'state': None, 'length': None, 'lbytes': None,
-                           'message_id': None, 'message': None}
+                           'message_id': None, 'message': None,
+                           'remainder': None}
         self.states = {'reading_length': 0, 'reading_id': 1,
                        'reading_message': 2}
 
@@ -63,35 +64,71 @@ class peer():
     #         self.handle_message()
 
     def read(self):
-        f = self.sock.recv(self.max_size)
-        print f
+        instr = self.sock.recv(self.max_size)
+        self.process_input(instr)
 
-    def try_to_grab(self, length):
-        message = self.sock.recv(length)
-        if len(message) == length:
-            return message
+    '''
+    Want to read whatever's available on the socket
+    - Check state
+    - Base case is "reading length"
+        - get_message_length (4 bytes)
+            - if there's more message, get_message_id
+            - else save state as 'reading_id'
+        - get_message_id (1 byte)
+            - if there's more message, get_message
+            - else save state as 'reading_message'
+        - get_message (message-length - 1 bytes)
+            - if len(message) == message_length - 1:
+                - respond to the message
+                - zero out stateful stuff
+            - elif len(message) < message_length -1:
+                - save partial message
+                - save state as 'reading message'
+    '''
+
+    def process_input(self, instr):
+        while instr:
+            if self.save_state['state'] == self.states['reading_length']:
+                instr = self.get_message_length(instr)
+            elif self.save_state['state'] == self.states['reading_id']:
+                instr = self.get_message_id(instr)
+            elif self.save_state['state'] == self.states['reading_message']:
+                instr = self.get_message(instr)
+
+    def get_message_length(self, instr):
+
+            # If we already have a partial message, start with that
+            if self.save_state['remainder']:
+                instr = self.save_state['remainder'] + instr
+                self.save_state['remainder'] = None
+
+            # If we have four bytes we can at least read the length
+            if len(instr) >= 4:
+                self.save_state['length'] = struct.unpack('>i', instr[0:4])
+                return instr[4:]
+
+            # Less than four bytes and we save + wait for next read
+            else:
+                self.save_state['remainder'] = instr
+                return None  # Will break out of process_input loop
+
+    def get_message_id(self, instr):
+        # No need to do the partial message check because
+        # len(instr) is guaranteed to be >= 1B
+        self.save_state['message_id'] = struct.unpack('b', instr[0])
+        return instr[1:]
+
+    # TODO -- finish this
+    def get_message(self, isntr):
+        if self.save_state['remainder']:
+            instr = self.save_state['remainder'] + instr
+        if len(instr) >= tktk:
+            self.save_state['message'] = tktk
+            return instr
         else:
-            self.save_state = (length, message)
+            tktk
 
-    # If we don't get the whole length we don't return
-    def get_message_length(self):
-            received = self.try_to_grab(4)
-            if received:
-                length = struct.unpack('>i', received)[0]
-                return length
-
-    # TODO -- ?
-    def get_message(self, sock, length):
-        message = sock.recv(length)
-        if len(message) == length:
-            return message
-        else:
-            self.save_state(sock, message, length)
-            return None
-
-    def get_message_id(self, sock):
-        message_id = struct.unpack('b', sock.recv(1))[0]
-        return message_id
+        
 
     def handle_message(self, i, message_id, message):
         if message_id == 0:
