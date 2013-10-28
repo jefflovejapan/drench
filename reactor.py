@@ -44,8 +44,8 @@ class Reactor(object):
         counter = 0
         while 1:
             if counter >= 20:
-                break
-            rrlist, _, _ = select.select(self.select_list, [], [])
+                return
+            rrlist, _, _ = select.select(self.select_list, [], [], 0)
             for i in rrlist:  # Doesn't require if test
                 if i == self.sock:
                     # TODO -- expand this into creating new peers

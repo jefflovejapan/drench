@@ -146,6 +146,7 @@ def main():
     mytorrent.tracker_request()
     mytorrent.handshake_peers()
     mytorrent.reactor.event_loop()
+    return
 
 
 if __name__ == '__main__':

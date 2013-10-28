@@ -7,9 +7,8 @@ class peer():
     # takes place using socket before peer init
     def __init__(self, sock, reactor, data):
         self.sock = sock
-        self.sock.setblocking(False)
+        # self.sock.setblocking(False)
         self.reactor = reactor
-
         self.save_state = {'state': None, 'length': None, 'lbytes': None,
                            'message_id': None, 'message': None}
         self.states = {'reading_length': 0, 'reading_id': 1,
