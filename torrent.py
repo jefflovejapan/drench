@@ -101,34 +101,29 @@ class torrent():
             s = socket.socket()
             s.setblocking(True)
             s.settimeout(0.5)
-            s.connect(i)
+            try:
+                s.connect(i)
+            except socket.timeout:
+                print '{} timed out on connect'.format(i)
+                continue
             s.send(packet)
             try:
                 data = s.recv(68)  # Peer's handshake - len from docs
                 if data:
                     print 'From {} received: {}'.format(i, data)
-                    s.setblocking(False)
-                    self.initpeer(s)  # Initializing peers here
+                    self.initpeer(s, data)  # Initializing peers here
             except socket.timeout:
-                print '{} timed out'.format()
+                print '{} timed out on recv'.format(i)
+                continue
+        else:
+            self.peer_ips = []
 
-    # TODO -- add call to this for any new peers I get from tracker
-    def initpeer(self, sock):
-        tpeer = peer.peer(sock, self.reactor)
-        self.rlist.append(tpeer)  # I'm adding to my rlist for event loop
+    def initpeer(self, sock, data):
+        tpeer = peer.peer(sock, self.reactor, data)
         self.peerdict[sock] = tpeer
 
-    def do_reads(self, rrlist):
-        for i in rrlist:
-            message_length = self.peerdict[i].get_message_length()
-            message_id = self.peerdict[i].get_message_id()
-            message = self.peerdict[i].get_message(i, message_length-1)
-            self.handle_message(i, message_id, message)
-
-    # TODO -- refactor
-    def track_peer(self, psocket):
-        if psocket not in self.peerdict.keys():
-            self.peerdict[psocket] = {}
+        self.reactor.select_list.append(tpeer)
+        # Reactor now listening to tpeer object
 
     # TODO -- refactor
     def tracker_request(self):
@@ -138,7 +133,7 @@ class torrent():
                               params=payload)
         print len(self.r.text)
         self.tresponse = tparser.bdecodes(self.r.text.encode('latin-1'))
-        self.get_peers()
+        self.get_peer_ips()
 
 
 def main():
@@ -148,7 +143,10 @@ def main():
     torrent_path = args.torrent_path
     mytorrent = torrent(torrent_path)
     mytorrent.tracker_request()
+    mytorrent.reactor.max_size = mytorrent.piece_length
     mytorrent.handshake_peers()
+    pudb.set_trace()
+    mytorrent.reactor.event_loop()
 
 
 if __name__ == '__main__':

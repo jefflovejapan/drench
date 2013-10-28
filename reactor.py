@@ -3,6 +3,8 @@ import socket
 import select
 import time
 import pudb
+import cPickle
+from bitarray import bitarray
 
 
 class Reactor(object):
@@ -15,11 +17,12 @@ class Reactor(object):
 
         self.sock.bind(('127.0.0.1', 7005))
 
-        # Adding server socket to read_list to check for new connections
+        # Adding server socket to select_list to check for new connections
         # in same call to select inside event loop
-        self.read_list = [self.sock]
+        self.select_list = [self.sock]
         self.sock.listen(5)
         print 'Listening on 127.0.0.1:7005'
+        self.max_size = None
 
     def subscribe(self, callback, event):
         self.subscribed[event].append(callback)  # Add our callbacks here
@@ -29,26 +32,25 @@ class Reactor(object):
             callback()                           # their trigger(event)
                                                  # happens
 
-    def read(self, sock):
+    def read(self, obj):
         def read_clos():
-            print sock.getsockname()
-            f = sock.recv(100)
+            print obj.getsockname()
+            f = obj.recv()
             print ("Here's what we received at time {} from {}"
-                   ": {}").format(time.clock(), sock.fileno(), f)
+                   ": {}").format(time.clock(), obj.fileno(), f)
             self.subscribed['read'].remove(read_clos)
             print self.subscribed['read']
-        read_clos.__name__ = "closure that reads on {}".format(repr(sock))
+        read_clos.__name__ = "closure that reads on {}".format(repr(obj))
         return read_clos
 
     def event_loop(self):
         while 1:
-            rrlist, _, _ = select.select(self.read_list, [], [])
+            rrlist, _, _ = select.select(self.select_list, [], [])
             for i in rrlist:  # Doesn't require if test
                 if i == self.sock:
-
                     # Get each client waiting to connect
                     newsocket, addr = self.sock.accept()
-                    self.read_list.append(newsocket)
+                    self.select_list.append(newsocket)
                 else:
                     clos = self.read(i)
                     self.subscribed['read'].append(clos)
@@ -58,6 +60,27 @@ class Reactor(object):
         You only want to call the callbacks if the events actually happened.
         Manage everything by timing / coordinating the callbacks.
         '''
+
+        '''
+        How to manage requests:
+        - In the metainfo file is a list of ALL 20-byte SHA-1 hash values,
+          one for each piece
+        - Therefore, the total number of pieces is tdict['info']['pieces']/20
+        - Length is the length of the *file* in bytes
+        - In the trivial case, I can just fire off 80 requests
+
+        How to store data:
+        - Can't just store it all in memory
+        - Once I complete a block, I can save it to disk
+            - How do I retrieve it?
+        '''
+
+    def do_reads(self, rrlist):
+        for i in rrlist:
+            message_length = self.peerdict[i].get_message_length()
+            message_id = self.peerdict[i].get_message_id()
+            message = self.peerdict[i].get_message(i, message_length-1)
+            self.handle_message(i, message_id, message)
 
 
 def main():
