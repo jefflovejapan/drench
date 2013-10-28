@@ -8,6 +8,7 @@ import time
 import pudb
 import reactor
 import peer
+from bitarray import bitarray
 
 
 class torrent():
@@ -23,6 +24,14 @@ class torrent():
         self.tracker_response = None
         self.peerdict = {}
         self.hash_string = None
+        self.queued_requests = []
+        mybytes = divmod(len(self.torrent_dict['info']['pieces']), 20)
+        if mybytes[1] == 0:
+            self.bitfield = bitarray(len(self.torrent_dict['info']
+                                     ['pieces'])//20)
+        else:
+            raise ValueError('Torrent file has bad hash')
+        self.bitfield.setall(False)
         self.reactor = reactor.Reactor()
 
     @property
@@ -31,13 +40,7 @@ class torrent():
 
     @property
     def num_pieces(self):
-        # Since there's 20 bytes in the string for each piece
-        pieces = divmod(len(self.torrent_dict['info']['pieces']), 20)
-        if pieces[1] == 0:
-            return pieces[0]
-        else:
-            # Hash needs to be 20 bytes per piece
-            raise ValueError('Torrent file error -- bad hash')
+        len(self.bitfield)
 
     @property
     def length(self):
@@ -90,7 +93,7 @@ class torrent():
 
         packet = ''.join([chr(pstrlen), pstr, chr(0)*8, info_hash,
                           peer_id])
-        print "Here's my packet {}".format(packet)
+        print "Here's my packet {}".format(repr(packet))
         # TODO -- add some checks in here so that I'm talking
             # to a maximum of 30 peers
         for i in self.peer_ips:
@@ -107,7 +110,7 @@ class torrent():
             try:
                 data = s.recv(68)  # Peer's handshake - len from docs
                 if data:
-                    print 'From {} received: {}'.format(i, data)
+                    print 'From {} received: {}'.format(i, repr(data))
                     self.initpeer(s, data)  # Initializing peers here
             except socket.timeout:
                 print '{} timed out on recv'.format(i)
@@ -116,7 +119,7 @@ class torrent():
             self.peer_ips = []
 
     def initpeer(self, sock, data):
-        tpeer = peer.peer(sock, self.reactor, data)
+        tpeer = peer.peer(sock, self.reactor, self, data)
         tpeer.max_size = self.torrent_dict['info']['piece length']
         self.peerdict[sock] = tpeer
 
@@ -137,7 +140,7 @@ class torrent():
 
 
 def main():
-    pudb.set_trace()
+    # pudb.set_trace()
     argparser = argparse.ArgumentParser()
     argparser.add_argument('torrent_path')
     args = argparser.parse_args()  # Getting path from command line
@@ -145,6 +148,7 @@ def main():
     mytorrent = torrent(torrent_path)
     mytorrent.tracker_request()
     mytorrent.handshake_peers()
+    # pudb.set_trace()
     mytorrent.reactor.event_loop()
     return
 

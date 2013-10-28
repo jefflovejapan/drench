@@ -3,7 +3,6 @@ import socket
 import select
 import time
 import pudb
-import cPickle
 from bitarray import bitarray
 
 
@@ -31,31 +30,36 @@ class Reactor(object):
             callback()                           # their trigger(event)
                                                  # happens
 
-    def read(self, obj):
-        def read_clos():
-            print obj.getsockname()
-            obj.read()
-            self.subscribed['read'].remove(read_clos)
-            print self.subscribed['read']
-        read_clos.__name__ = "closure that reads on {}".format(repr(obj))
-        return read_clos
-
     def event_loop(self):
-        counter = 0
         while 1:
-            if counter >= 20:
-                return
-            rrlist, _, _ = select.select(self.select_list, [], [], 0)
+            rrlist, _, _ = select.select(self.select_list, [], [], 1)
+            if not rrlist:
+                print 'no rrlist'
             for i in rrlist:  # Doesn't require if test
+                print 'Object in rrlist is a {}'.format(i.__class__.__name__)
                 if i == self.sock:
                     # TODO -- expand this into creating new peers
                     newsocket, addr = self.sock.accept()
                     self.select_list.append(newsocket)
                 else:
-                    clos = self.read(i)
-                    self.subscribed['read'].append(clos)
+                    print 'Queueing up read closure for', i
+                    rclos = i.read
+                    self.subscribed['read'].append(rclos)
+                    print 'Queueing up logic closure for', i
+                    lclos = i.logic
+                    self.subscribed['logic'].append(lclos)
+            else:
+                cclos = i.cleanup
+                self.subscribed['cleanup'].append(cclos)
+
+            print 'triggering read'
             self.trigger('read')
-            counter += 1
+            print 'triggering logic'
+            self.trigger('logic')
+            print 'triggering write'
+            self.trigger('write')
+            print 'triggering cleanup'
+            self.trigger('cleanup')
 
         '''
         You only want to call the callbacks if the events actually happened.
@@ -75,13 +79,6 @@ class Reactor(object):
         - Once I complete a block, I can save it to disk
             - How do I retrieve it?
         '''
-
-    def do_reads(self, rrlist):
-        for i in rrlist:
-            message_length = self.peerdict[i].get_message_length()
-            message_id = self.peerdict[i].get_message_id()
-            message = self.peerdict[i].get_message(i, message_length-1)
-            self.handle_message(i, message_id, message)
 
 
 def main():
