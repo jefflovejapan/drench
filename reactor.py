@@ -22,7 +22,6 @@ class Reactor(object):
         self.select_list = [self.sock]
         self.sock.listen(5)
         print 'Listening on 127.0.0.1:7005'
-        self.max_size = None
 
     def subscribe(self, callback, event):
         self.subscribed[event].append(callback)  # Add our callbacks here
@@ -35,26 +34,28 @@ class Reactor(object):
     def read(self, obj):
         def read_clos():
             print obj.getsockname()
-            f = obj.recv()
-            print ("Here's what we received at time {} from {}"
-                   ": {}").format(time.clock(), obj.fileno(), f)
+            obj.read()
             self.subscribed['read'].remove(read_clos)
             print self.subscribed['read']
         read_clos.__name__ = "closure that reads on {}".format(repr(obj))
         return read_clos
 
     def event_loop(self):
+        counter = 0
         while 1:
+            if counter >= 20:
+                break
             rrlist, _, _ = select.select(self.select_list, [], [])
             for i in rrlist:  # Doesn't require if test
                 if i == self.sock:
-                    # Get each client waiting to connect
+                    # TODO -- expand this into creating new peers
                     newsocket, addr = self.sock.accept()
                     self.select_list.append(newsocket)
                 else:
                     clos = self.read(i)
                     self.subscribed['read'].append(clos)
             self.trigger('read')
+            counter += 1
 
         '''
         You only want to call the callbacks if the events actually happened.

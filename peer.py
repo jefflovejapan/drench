@@ -7,6 +7,7 @@ class peer():
     # takes place using socket before peer init
     def __init__(self, sock, reactor, data):
         self.sock = sock
+        self.sock.setblocking(False)
         self.reactor = reactor
 
         self.save_state = {'state': None, 'length': None, 'lbytes': None,
@@ -35,25 +36,36 @@ class peer():
     def fileno(self):
         return self.sock.fileno()
 
-    def read(self):
-        if not self.save_state['state']:
-            pass
-        elif self.save_state['state'] == self.states['reading_length']:
-            length_stub = self.save_state['length']
-            length = self.get_message_length(length_stub)
-            if len(length) >= 4:
-                self.save_state['length'] = struct.unpack('>i', length)[0]
+    def getsockname(self):
+        return self.sock.getsockname()
 
-        elif self.save_state['state'] == self.states['reading_id']:
-            self.get_message_id()
-        if any(self.save_state['length'], self.save_state['message']):
-            length = self.save_state['length']
-            message = self.save_state['message']
-        length = self.get_message_length()
-        message_id = self.get_message_id()
-        message = self.get_message()
-        if message is not None:
-            self.handle_message()
+    # def recv(self, size):
+    #     f = self.sock.recv(size)
+    #     return f
+
+    # def read(self):
+    #     if not self.save_state['state']:
+    #         pass
+    #     elif self.save_state['state'] == self.states['reading_length']:
+    #         length_stub = self.save_state['length']
+    #         length = self.get_message_length(length_stub)
+    #         if len(length) >= 4:
+    #             self.save_state['length'] = struct.unpack('>i', length)[0]
+
+    #     elif self.save_state['state'] == self.states['reading_id']:
+    #         self.get_message_id()
+    #     if any(self.save_state['length'], self.save_state['message']):
+    #         length = self.save_state['length']
+    #         message = self.save_state['message']
+    #     length = self.get_message_length()
+    #     message_id = self.get_message_id()
+    #     message = self.get_message()
+    #     if message is not None:
+    #         self.handle_message()
+
+    def read(self):
+        f = self.sock.recv(self.max_size)
+        print f
 
     def try_to_grab(self, length):
         message = self.sock.recv(length)

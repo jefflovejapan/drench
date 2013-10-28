@@ -13,29 +13,26 @@ import peer
 class torrent():
 
     def __init__(self, torrent_path, port=55308):
-        tdict = tparser.bdecode(torrent_path)
+        torrent_dict = tparser.bdecode(torrent_path)
         # pudb.set_trace()
-        self.tdict = tdict
+        self.torrent_dict = torrent_dict
         self.peerdict = {}
         self.peer_ips = []
         self.port = port
         self.r = None
-        self.tresponse = None
+        self.tracker_response = None
         self.peerdict = {}
         self.hash_string = None
-        self.rlist = []  # Sockets to check for avail reads
-        self.wlist = []  # Sockets to check for avail writes
-        self.xlist = []  # Sockets to check for exceptions (?)
         self.reactor = reactor.Reactor()
 
     @property
     def piece_length(self):
-        return self.tdict['info']['piece length']
+        return self.torrent_dict['info']['piece length']
 
     @property
     def num_pieces(self):
         # Since there's 20 bytes in the string for each piece
-        pieces = divmod(len(self.tdict['info']['pieces']), 20)
+        pieces = divmod(len(self.torrent_dict['info']['pieces']), 20)
         if pieces[1] == 0:
             return pieces[0]
         else:
@@ -44,7 +41,7 @@ class torrent():
 
     @property
     def length(self):
-        return self.tdict['info']['length']
+        return self.torrent_dict['info']['length']
 
     @property
     def last_piece_length(self):
@@ -52,7 +49,7 @@ class torrent():
 
     def build_payload(self):
         payload = {}
-        hashed_info = hashlib.sha1(tparser.bencode(self.tdict['info']))
+        hashed_info = hashlib.sha1(tparser.bencode(self.torrent_dict['info']))
         self.hash_string = hashed_info.digest()
         self.peer_id = '-TR2820-wa0n562rl3lu'  # TODO: randomize
         payload['info_hash'] = self.hash_string
@@ -60,7 +57,7 @@ class torrent():
         payload['port'] = self.port
         payload['uploaded'] = 0
         payload['downloaded'] = 0
-        payload['left'] = self.tdict['info']['length']
+        payload['left'] = self.torrent_dict['info']['length']
         payload['compact'] = 1
         payload['supportcrypto'] = 1
         payload['event'] = 'started'
@@ -68,7 +65,7 @@ class torrent():
 
     # TODO - create peer objects with ref to reactor
     def get_peer_ips(self):
-        presponse = [ord(i) for i in self.tresponse['peers']]
+        presponse = [ord(i) for i in self.tracker_response['peers']]
         while presponse:
             peer_ip = (('.'.join(str(x) for x in presponse[0:4]),
                        256*presponse[4] + presponse[5]))
@@ -120,6 +117,7 @@ class torrent():
 
     def initpeer(self, sock, data):
         tpeer = peer.peer(sock, self.reactor, data)
+        tpeer.max_size = self.torrent_dict['info']['piece length']
         self.peerdict[sock] = tpeer
 
         self.reactor.select_list.append(tpeer)
@@ -127,25 +125,26 @@ class torrent():
 
     # TODO -- refactor
     def tracker_request(self):
-        assert self.tdict['info']
+        assert self.torrent_dict['info']
         payload = self.build_payload()
-        self.r = requests.get(self.tdict['announce'],
+        self.r = requests.get(self.torrent_dict['announce'],
                               params=payload)
         print len(self.r.text)
-        self.tresponse = tparser.bdecodes(self.r.text.encode('latin-1'))
+
+        # Decoding response from tracker
+        self.tracker_response = tparser.bdecodes(self.r.text.encode('latin-1'))
         self.get_peer_ips()
 
 
 def main():
+    pudb.set_trace()
     argparser = argparse.ArgumentParser()
     argparser.add_argument('torrent_path')
     args = argparser.parse_args()  # Getting path from command line
     torrent_path = args.torrent_path
     mytorrent = torrent(torrent_path)
     mytorrent.tracker_request()
-    mytorrent.reactor.max_size = mytorrent.piece_length
     mytorrent.handshake_peers()
-    pudb.set_trace()
     mytorrent.reactor.event_loop()
 
 
