@@ -15,11 +15,13 @@ class peer():
         self.torrent = torrent
         self.valid_indices = []
         self.bitfield = None
+        self.max_size = torrent.torrent_dict['info']['piece length'] + 13
         self.states = {'reading_length': 0, 'reading_id': 1,
                        'reading_message': 2}
         self.save_state = {'state': self.states['reading_length'],
                            'length': None, 'message_id': None,
                            'message': None, 'remainder': None}
+        self.next_request = None
 
     '''
     Call select
@@ -42,36 +44,18 @@ class peer():
     def fileno(self):
         return self.sock.fileno()
 
-    def getsockname(self):
-        return self.sock.getsockname()
+    def getpeername(self):
+        return self.sock.getpeername()
 
     def read(self):
         print 'inside peer.read'
         try:
             instr = self.sock.recv(self.max_size)
+            print "Received from peer:", repr(instr)
             self.process_input(instr)
             self.reactor.subscribed['read'].remove(self.read)
         except socket.error as e:
             print e.message
-
-    '''
-    Want to read whatever's available on the socket
-    - Check state
-    - Base case is "reading length"
-        - get_message_length (4 bytes)
-            - if there's more message, get_message_id
-            - else save state as 'reading_id'
-        - get_message_id (1 byte)
-            - if there's more message, get_message
-            - else save state as 'reading_message'
-        - get_message (message-length - 1 bytes)
-            - if len(message) == message_length - 1:
-                - respond to the message
-                - zero out stateful stuff
-            - elif len(message) < message_length -1:
-                - save partial message
-                - save state as 'reading message'
-    '''
 
     def process_input(self, instr):
         # pudb.set_trace()
@@ -125,7 +109,9 @@ class peer():
             self.save_state['state'] = self.states['reading_length']
             return instr[message_length:]
         else:
-            self.save_state['remainder'] += instr
+            self.save_state['remainder'] = (str(self.save_state['remainder'])
+                                            + instr)
+
             return None
 
     def handle_message(self):
@@ -183,29 +169,43 @@ class peer():
         pass
 
     def logic(self):
+        '''
+        Figures out what needs to be done next
+        '''
         print 'inside logic'
-        for i in range(len(self.bitfield)):
-            if self.bitfield[i] == 1:
-                self.valid_indices.append(i)
-        print self.valid_indices
-        while 1:
-            next_request = random.choice(self.valid_indices)
-            if next_request not in self.torrent.queued_requests:
-                self.torrent.queued_requests.append(next_request)
-                break
-        self.request(next_request)
+        # TODO -- Why do I need this check? Why would a responsive socket
+        # not send me a bitfield?
+        if self.bitfield:
+            for i in range(len(self.bitfield)):
+                if self.bitfield[i] == 1:
+                    self.valid_indices.append(i)
+            print self.valid_indices
+            while 1:
+                next_request = random.choice(self.valid_indices)
+                if next_request not in self.torrent.queued_requests:
+                    self.torrent.queued_requests.append(next_request)
+                    self.next_request = next_request
+                    break
+            self.reactor.subscribed['write'].append(self.request)
 
     def interested(self):
         print 'inside interested'
-        packet = ''.join(struct.pack('>ib', 1, 2))
+        packet = ''.join(struct.pack('!ib', 1, 2))
+        print "Here's the interested packet:", repr(packet)
         self.sock.send(packet)
 
-    def request(self, piece):
+    def write(self):
+        pass
+
+    def request(self):
         print 'inside request'
         # TODO -- global lookup for id/int conversion
-        packet = ''.join(struct.pack('>ibii', piece, 6, 0,
+        print ('self.next request:', self.next_request, '\n',
+               'piece size:', self.torrent.piece_length)
+        packet = ''.join(struct.pack('!ibiii', 13, 6, self.next_request, 0,
                          self.torrent.piece_length))
         self.sock.send(packet)
+        self.next_request = None
 
     def cleanup(self):
         print 'cleaning up'

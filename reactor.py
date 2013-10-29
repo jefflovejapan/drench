@@ -29,28 +29,33 @@ class Reactor(object):
         for callback in self.subscribed[event]:  # They get executed when
             callback()                           # their trigger(event)
                                                  # happens
+        self.subscribed[event] = []              # Zero everything out
 
     def event_loop(self):
+        counter = 0
         while 1:
-            rrlist, _, _ = select.select(self.select_list, [], [], 1)
-            if not rrlist:
+            print 'Counter at', counter
+            rrlist, _, _ = select.select(self.select_list, [], [], 5)
+            if not all(rrlist):
                 print 'no rrlist'
-            for i in rrlist:  # Doesn't require if test
-                print 'Object in rrlist is a {}'.format(i.__class__.__name__)
-                if i == self.sock:
-                    # TODO -- expand this into creating new peers
-                    newsocket, addr = self.sock.accept()
-                    self.select_list.append(newsocket)
-                else:
-                    print 'Queueing up read closure for', i
-                    rclos = i.read
-                    self.subscribed['read'].append(rclos)
-                    print 'Queueing up logic closure for', i
-                    lclos = i.logic
-                    self.subscribed['logic'].append(lclos)
             else:
-                cclos = i.cleanup
-                self.subscribed['cleanup'].append(cclos)
+                for i in rrlist:  # Doesn't require if test
+                    print ('Object in rrlist is a {} at IP'
+                           '{}').format(i.__class__.__name__, i.getpeername())
+                    if i == self.sock:
+                        # TODO -- expand this into creating new peers
+                        newsocket, addr = self.sock.accept()
+                        self.select_list.append(newsocket)
+                    else:
+                        rclos = i.read
+                        self.subscribed['read'].append(rclos)
+                        lclos = i.logic
+                        self.subscribed['logic'].append(lclos)
+                        wclos = i.write
+                        self.subscribed['write'].append(wclos)
+                else:
+                    cclos = i.cleanup
+                    self.subscribed['cleanup'].append(cclos)
 
             print 'triggering read'
             self.trigger('read')
@@ -60,6 +65,7 @@ class Reactor(object):
             self.trigger('write')
             print 'triggering cleanup'
             self.trigger('cleanup')
+            counter += 1
 
         '''
         You only want to call the callbacks if the events actually happened.

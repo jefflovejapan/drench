@@ -3,8 +3,6 @@ import socket
 import tparser
 import hashlib
 import argparse
-import select
-import time
 import pudb
 import reactor
 import peer
@@ -15,7 +13,6 @@ class torrent():
 
     def __init__(self, torrent_path, port=55308):
         torrent_dict = tparser.bdecode(torrent_path)
-        # pudb.set_trace()
         self.torrent_dict = torrent_dict
         self.peerdict = {}
         self.peer_ips = []
@@ -51,6 +48,9 @@ class torrent():
         return self.length - (self.piece_length * (self.num_pieces - 1))
 
     def build_payload(self):
+        '''
+        Builds the payload that will be sent in tracker_request
+        '''
         payload = {}
         hashed_info = hashlib.sha1(tparser.bencode(self.torrent_dict['info']))
         self.hash_string = hashed_info.digest()
@@ -66,8 +66,30 @@ class torrent():
         payload['event'] = 'started'
         return payload
 
+    # TODO -- refactor?
+    def tracker_request(self):
+        '''
+        Sends the initial request to the tracker, compiling list of all peers
+        announcing to the tracker
+        '''
+
+        assert self.torrent_dict['info']
+        payload = self.build_payload()
+        self.r = requests.get(self.torrent_dict['announce'],
+                              params=payload)
+        print len(self.r.text)
+
+        # Decoding response from tracker
+        self.tracker_response = tparser.bdecodes(self.r.text.encode('latin-1'))
+        self.get_peer_ips()
+
     # TODO - create peer objects with ref to reactor
     def get_peer_ips(self):
+        '''
+        Generates list of peer IPs from tracker response. Note: not all of
+        these IPs might be good, which is why we only init peer objects for
+        the subset that respond to handshake
+        '''
         presponse = [ord(i) for i in self.tracker_response['peers']]
         while presponse:
             peer_ip = (('.'.join(str(x) for x in presponse[0:4]),
@@ -77,7 +99,6 @@ class torrent():
             presponse = presponse[6:]
 
     def handshake_peers(self):
-
         '''
         pstrlen = length of pstr as one byte
         pstr = BitTorrent protocol
@@ -119,28 +140,18 @@ class torrent():
             self.peer_ips = []
 
     def initpeer(self, sock, data):
-        tpeer = peer.peer(sock, self.reactor, self, data)
-        tpeer.max_size = self.torrent_dict['info']['piece length']
-        self.peerdict[sock] = tpeer
+        '''
+        Creates a new peer object for a valid socket and adds it to reactor's
+        listen list
+        '''
 
+        tpeer = peer.peer(sock, self.reactor, self, data)
+        self.peerdict[sock] = tpeer
         self.reactor.select_list.append(tpeer)
         # Reactor now listening to tpeer object
 
-    # TODO -- refactor
-    def tracker_request(self):
-        assert self.torrent_dict['info']
-        payload = self.build_payload()
-        self.r = requests.get(self.torrent_dict['announce'],
-                              params=payload)
-        print len(self.r.text)
-
-        # Decoding response from tracker
-        self.tracker_response = tparser.bdecodes(self.r.text.encode('latin-1'))
-        self.get_peer_ips()
-
 
 def main():
-    # pudb.set_trace()
     argparser = argparse.ArgumentParser()
     argparser.add_argument('torrent_path')
     args = argparser.parse_args()  # Getting path from command line
@@ -148,7 +159,6 @@ def main():
     mytorrent = torrent(torrent_path)
     mytorrent.tracker_request()
     mytorrent.handshake_peers()
-    # pudb.set_trace()
     mytorrent.reactor.event_loop()
     return
 
