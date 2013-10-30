@@ -30,6 +30,8 @@ class torrent():
             raise ValueError('Torrent file has bad hash')
         self.bitfield.setall(False)
         self.reactor = reactor.Reactor()
+        self.outfile = open('{}'.format(self.torrent_dict['info']['name']),
+                            'w')
 
     @property
     def piece_length(self):
@@ -116,7 +118,7 @@ class torrent():
                           peer_id])
         print "Here's my packet {}".format(repr(packet))
         # TODO -- add some checks in here so that I'm talking
-            # to a maximum of 30 peers
+        # to a maximum of 30 peers
         for i in self.peer_ips:
             print i  # just want to see who i'm talking to
             s = socket.socket()
@@ -141,7 +143,7 @@ class torrent():
 
     def initpeer(self, sock, data):
         '''
-        Creates a new peer object for a valid socket and adds it to reactor's
+        Creates a new peer object for a nvalid socket and adds it to reactor's
         listen list
         '''
 
@@ -152,6 +154,7 @@ class torrent():
 
 
 def main():
+    over_there = tparser.bdecode('torrent.torrent')
     argparser = argparse.ArgumentParser()
     argparser.add_argument('torrent_path')
     args = argparser.parse_args()  # Getting path from command line

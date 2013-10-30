@@ -37,22 +37,22 @@ class peer():
 
     def read(self):
         try:
-            instr = self.sock.recv(self.max_size)
-            print 'Just received a message size', len(instr)
-            if len(instr) == 0:
-                raise Exception('Got a length 0 message')
-            self.process_input(instr)
+            bytes = self.sock.recv(self.max_size)
+            print 'Just received', len(bytes), 'bytes'
+            if len(bytes) == 0:
+                raise Exception('Got 0 bytes')
+            self.process_input(bytes)
         except socket.error as e:
             print e.message
 
-    def process_input(self, instr):
-        while instr:
+    def process_input(self, bytes):
+        while bytes:
             if self.save_state['state'] == self.states['reading_length']:
-                instr = self.get_message_length(instr)
+                bytes = self.get_message_length(bytes)
             if self.save_state['state'] == self.states['reading_id']:
-                instr = self.get_message_id(instr)
+                bytes = self.get_message_id(bytes)
             if self.save_state['state'] == self.states['reading_message']:
-                instr = self.get_message(instr)
+                bytes = self.get_message(bytes)
 
     def get_message_length(self, instr):
 
@@ -92,13 +92,12 @@ class peer():
         self.save_state['state'] = self.states['reading_message']
         return instr[1:]
 
-
     # TODO - THE PROBLEM IS THAT THE SIZE KEEPS DOUBLING WHEN IT SHOULDN'T BE
     def get_message(self, instr):
 
         # Since one byte is getting used up for the message_id
-        advertised_message_length = self.save_state['length'] - 1
-        if advertised_message_length == 0:
+        length_after_id = self.save_state['length'] - 1
+        if length_after_id == 0:
             self.save_state['state'] = self.states['reading_length']
             self.save_state['message_id'] = None
             self.save_state['message'] = ''
@@ -113,15 +112,15 @@ class peer():
 
         # If we have more than what we need we act on the full message and
         # return the rest
-        if len(instr) >= advertised_message_length:
+        if len(instr) >= length_after_id:
 
-            self.save_state['message'] = instr[:advertised_message_length]
+            self.save_state['message'] = instr[:length_after_id]
 
             # If we hit handle_message we know that we have a FULL MESSAGE
             # All the stateful stuff can go in the garbage
             self.handle_message()
             self.reset_state()
-            return instr[advertised_message_length:]
+            return instr[length_after_id:]
 
         # Otherwise we stash what we have and keep things the way they are
         else:
@@ -161,16 +160,18 @@ class peer():
             pass
 
     def pchoke(self):
+        print 'choke'
         self.ischoking = True
 
     def punchoke(self):
+        print 'unchoke'
         self.ischoking = False
 
     def pinterested(self):
-        pass
+        print 'pinterested'
 
     def pnotinterested(self):
-        pass
+        print 'pnotinterested'
 
     def phave(self):
         index = struct.unpack('>i', self.save_state['message'])[0]
@@ -187,20 +188,21 @@ class peer():
         # pudb.set_trace()
 
     def prequest(self):
-        pass
+        print 'prequest'
 
     def ppiece(self, content):
-        # pudb.set_trace()
         index, begin = struct.unpack('!ii', content[0:8])
         block = content[8:]
-        # if hashlib.sha1(block).digest() == self.torrent.torrent_dict['info']['pieces'][index:index+20]:
-
-        print ('writing piece {}. Length is '
-               '{}').format(repr(block)[:10] + '...', len(block))
-        self.torrent.outfile.seek(index)
-        self.torrent.outfile.write(block)
-        # else:
-        #     raise Exception("hash of piece doesn't match hash in torrent_dict")
+        if hashlib.sha1(block).digest() == \
+                self.torrent.torrent_dict['info']['pieces'][20*index:20*index+20]:
+            print 'hash matches'
+            print ('writing piece {}. Length is '
+                   '{}').format(repr(block)[:10] + '...', len(block))
+            self.torrent.outfile.seek(index*self.torrent.piece_length)
+            self.torrent.outfile.write(block)
+        else:
+            pudb.set_trace()
+            # raise Exception("hash of piece doesn't match hash in torrent_dict")
 
         # TODO -- add check for hash equality
         self.torrent.bitfield[index] = True
@@ -208,7 +210,7 @@ class peer():
         self.reactor.subscribed['logic'].append(self.logic)
 
     def pcancel(self):
-        pass
+        print 'pcancel'
 
     def logic(self):
         '''
@@ -223,7 +225,9 @@ class peer():
                 if self.torrent.bitfield[i] is False \
                    and self.bitfield[i] is True:
                     self.valid_indices.append(i)
-
+            if not self.valid_indices:
+                self.torrent.outfile.close()
+                return
             while 1:
                 next_request = random.choice(self.valid_indices)
                 if next_request not in self.torrent.queued_requests:
@@ -253,15 +257,10 @@ class peer():
         pass
 
     def request(self):
-        # pudb.set_trace()
         print 'inside request'
         # TODO -- global lookup for id/int conversion
         print ('self.next request:', self.next_request, '\n',
                'piece size:', self.torrent.piece_length)
-
-        '''
-
-        '''
 
         packet = ''.join(struct.pack('!ibiii', 13, 6, self.next_request, 0,
                          self.torrent.piece_length))
