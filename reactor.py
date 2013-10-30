@@ -36,35 +36,25 @@ class Reactor(object):
         while 1:
             print 'Counter at', counter
             rrlist, _, _ = select.select(self.select_list, [], [], 5)
-            if not all(rrlist):
-                print 'no rrlist'
-            else:
-                for i in rrlist:  # Doesn't require if test
-                    print ('Object in rrlist is a {} at IP'
-                           '{}').format(i.__class__.__name__, i.getpeername())
-                    if i == self.sock:
-                        # TODO -- expand this into creating new peers
-                        newsocket, addr = self.sock.accept()
-                        self.select_list.append(newsocket)
-                    else:
-                        rclos = i.read
-                        self.subscribed['read'].append(rclos)
-                        lclos = i.logic
-                        self.subscribed['logic'].append(lclos)
-                        wclos = i.write
-                        self.subscribed['write'].append(wclos)
+            for i in rrlist:  # Doesn't require if test
+                if i == self.sock:
+                    # TODO -- expand this into creating new peers
+                    newsocket, addr = self.sock.accept()
+                    self.select_list.append(newsocket)
                 else:
-                    cclos = i.cleanup
-                    self.subscribed['cleanup'].append(cclos)
+                    print 'fileno', i.fileno(), 'ready to read'
+                    self.subscribed['read'].append(i.read)
 
-            print 'triggering read'
+            wclos = i.write
+            self.subscribed['write'].append(wclos)
+            cclos = i.cleanup
+            self.subscribed['cleanup'].append(cclos)
+
             self.trigger('read')
-            print 'triggering logic'
             self.trigger('logic')
-            print 'triggering write'
             self.trigger('write')
-            print 'triggering cleanup'
             self.trigger('cleanup')
+            time.sleep(0.2)
             counter += 1
 
         '''
