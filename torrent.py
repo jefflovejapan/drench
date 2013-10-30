@@ -39,7 +39,7 @@ class torrent():
 
     @property
     def num_pieces(self):
-        len(self.bitfield)
+        return len(self.bitfield)
 
     @property
     def length(self):
