@@ -3,6 +3,7 @@ import struct
 import pudb
 import random
 import socket
+import hashlib
 
 
 class peer():
@@ -15,31 +16,18 @@ class peer():
         self.torrent = torrent
         self.valid_indices = []
         self.bitfield = None
-        self.max_size = torrent.torrent_dict['info']['piece length'] + 13
+        self.max_size = 16 * 1024
         self.states = {'reading_length': 0, 'reading_id': 1,
                        'reading_message': 2}
         self.save_state = {'state': self.states['reading_length'],
-                           'length': None, 'message_id': None,
-                           'message': None, 'remainder': None}
+                           'length': 0, 'message_id': None,
+                           'message': '', 'remainder': ''}
         self.next_request = None
-
-    '''
-    Call select
-    Try to read from socket
-    Might get as little as *1 byte*
-    Suppose it's a new message and we're expecting to get a length
-        - Save state as 'reading length'
-        - Save the partial length in lbytes
-    We've gotten the length and we just got the id:
-        - Save state as 'reading message'
-        - Save the message_id as 'message_id'
-    We've gotten the length and we're expecting a message
-        - Keep state as 'reading message'
-        - Record the partial message
-    We hit the end of a message:
-        - Return the message
-        - Reset all fields of save_state to 0
-    '''
+        self.message_codes = ['choke', 'unchoke', 'interested',
+                              'not interested', 'have', 'bitfield', 'request',
+                              'piece', 'cancel', 'port']
+        self.ischoking = True
+        self.isinterested = False
 
     def fileno(self):
         return self.sock.fileno()
@@ -48,73 +36,109 @@ class peer():
         return self.sock.getpeername()
 
     def read(self):
-        print 'inside peer.read'
         try:
             instr = self.sock.recv(self.max_size)
-            print "Received from peer:", repr(instr)
+            print 'Just received a message size', len(instr)
+            if len(instr) == 0:
+                raise Exception('Got a length 0 message')
             self.process_input(instr)
-            self.reactor.subscribed['read'].remove(self.read)
         except socket.error as e:
             print e.message
 
     def process_input(self, instr):
-        # pudb.set_trace()
         while instr:
             if self.save_state['state'] == self.states['reading_length']:
                 instr = self.get_message_length(instr)
-            elif self.save_state['state'] == self.states['reading_id']:
+            if self.save_state['state'] == self.states['reading_id']:
                 instr = self.get_message_id(instr)
-            elif self.save_state['state'] == self.states['reading_message']:
+            if self.save_state['state'] == self.states['reading_message']:
                 instr = self.get_message(instr)
 
     def get_message_length(self, instr):
 
             # If we already have a partial message, start with that
             if self.save_state['remainder']:
+                print 'We have a remainder at the top of get_message_length'
                 instr = self.save_state['remainder'] + instr
-                self.save_state['remainder'] = None
+                self.save_state['remainder'] = ''
 
             # If we have four bytes we can at least read the length
             if len(instr) >= 4:
+
                 # Need 0 index because struct.unpack returns tuple
-                self.save_state['length'] = struct.unpack('>i', instr[0:4])[0]
-                self.save_state['state'] = self.states['reading_id']
-                return instr[4:]
+                # save_state['length'] is based on what the peer *says*, not
+                # on the length of the actual message
+                self.save_state['length'] = struct.unpack('!i', instr[0:4])[0]
+                print ("Client says message is {} bytes "
+                       "long").format(self.save_state['length'])
+                if self.save_state['length'] == 0:
+                    self.keep_alive()
+                    self.save_state['state'] = self.states['reading_length']
+                    return instr[4:]
+                else:
+                    self.save_state['state'] = self.states['reading_id']
+                    return instr[4:]
 
             # Less than four bytes and we save + wait for next read
+            # Increeedibly unlikely to happen
             else:
                 self.save_state['remainder'] = instr
-                return None  # Will break out of process_input loop
+                return ''
 
     def get_message_id(self, instr):
-        # No need to do the partial message check because
-        # len(instr) is guaranteed to be >= 1B
         self.save_state['message_id'] = struct.unpack('b', instr[0])[0]
+        print 'message_id is', \
+              self.message_codes[self.save_state['message_id']]
         self.save_state['state'] = self.states['reading_message']
         return instr[1:]
 
+
+    # TODO - THE PROBLEM IS THAT THE SIZE KEEPS DOUBLING WHEN IT SHOULDN'T BE
     def get_message(self, instr):
+
         # Since one byte is getting used up for the message_id
-        message_length = self.save_state['length'] - 1
-        if self.save_state['remainder']:
-            instr = self.save_state['remainder'] + instr
-        if len(instr) >= message_length:
-            self.save_state['message'] = instr[:message_length]
-
-            # When we get a whole message we handle it, then
-            # zero out all our state variables
-            self.handle_message()
-            self.save_state['message'] = None
-            self.save_state['message_id'] = None
+        advertised_message_length = self.save_state['length'] - 1
+        if advertised_message_length == 0:
             self.save_state['state'] = self.states['reading_length']
-            return instr[message_length:]
-        else:
-            self.save_state['remainder'] = (str(self.save_state['remainder'])
-                                            + instr)
+            self.save_state['message_id'] = None
+            self.save_state['message'] = ''
+            return instr
 
+        if self.save_state['remainder']:
+            print "Inside get_message. The previous remainder was", \
+                  len(self.save_state['remainder'])
+            print "The new contribution is", len(instr)
+            instr = self.save_state['remainder'] + instr
+            print 'total length of instr is', len(instr)
+
+        # If we have more than what we need we act on the full message and
+        # return the rest
+        if len(instr) >= advertised_message_length:
+
+            self.save_state['message'] = instr[:advertised_message_length]
+
+            # If we hit handle_message we know that we have a FULL MESSAGE
+            # All the stateful stuff can go in the garbage
+            self.handle_message()
+            self.reset_state()
+            return instr[advertised_message_length:]
+
+        # Otherwise we stash what we have and keep things the way they are
+        else:
+            print 'saving off', len(instr), 'bytes in remainder'
+            self.save_state['remainder'] = instr
             return None
 
+    def reset_state(self):
+        self.save_state['state'] = self.states['reading_length']
+        self.save_state['length'] = 0
+        self.save_state['message_id'] = None
+        self.save_state['message'] = ''
+        self.save_state['remainder'] = ''
+
+    # This is only getting called when I have a complete message
     def handle_message(self):
+        # pudb.set_trace()
         if self.save_state['message_id'] == 0:
             self.pchoke()
         elif self.save_state['message_id'] == 1:
@@ -130,17 +154,17 @@ class peer():
         elif self.save_state['message_id'] == 6:
             self.prequest()
         elif self.save_state['message_id'] == 7:
-            self.ppiece()
+            self.ppiece(self.save_state['message'])
         elif self.save_state['message_id'] == 8:
             self.pcancel()
         elif self.save_state['message_id'] == 9:
             pass
 
     def pchoke(self):
-        pass
+        self.ischoking = True
 
     def punchoke(self):
-        pass
+        self.ischoking = False
 
     def pinterested(self):
         pass
@@ -156,14 +180,32 @@ class peer():
     def pbitfield(self):
         self.bitfield = bitarray()
         self.bitfield.frombytes(self.save_state['message'])
-        print 'this is the bitfield', self.bitfield
+        print "this is the peer's bitfield", self.bitfield
         self.interested()
+        self.unchoke()
+        self.reactor.subscribed['logic'].append(self.logic)
+        # pudb.set_trace()
 
     def prequest(self):
         pass
 
-    def ppiece(self):
-        pass
+    def ppiece(self, content):
+        # pudb.set_trace()
+        index, begin = struct.unpack('!ii', content[0:8])
+        block = content[8:]
+        # if hashlib.sha1(block).digest() == self.torrent.torrent_dict['info']['pieces'][index:index+20]:
+
+        print ('writing piece {}. Length is '
+               '{}').format(repr(block)[:10] + '...', len(block))
+        self.torrent.outfile.seek(index)
+        self.torrent.outfile.write(block)
+        # else:
+        #     raise Exception("hash of piece doesn't match hash in torrent_dict")
+
+        # TODO -- add check for hash equality
+        self.torrent.bitfield[index] = True
+        print 'My bitfield:', self.torrent.bitfield
+        self.reactor.subscribed['logic'].append(self.logic)
 
     def pcancel(self):
         pass
@@ -176,13 +218,16 @@ class peer():
         # TODO -- Why do I need this check? Why would a responsive socket
         # not send me a bitfield?
         if self.bitfield:
-            for i in range(len(self.bitfield)):
-                if self.bitfield[i] == 1:
+            self.valid_indices = []
+            for i in range(len(self.torrent.bitfield)):
+                if self.torrent.bitfield[i] is False \
+                   and self.bitfield[i] is True:
                     self.valid_indices.append(i)
-            print self.valid_indices
+
             while 1:
                 next_request = random.choice(self.valid_indices)
                 if next_request not in self.torrent.queued_requests:
+                    print 'Setting next_request = {}'.format(next_request)
                     self.torrent.queued_requests.append(next_request)
                     self.next_request = next_request
                     break
@@ -194,18 +239,33 @@ class peer():
         print "Here's the interested packet:", repr(packet)
         self.sock.send(packet)
 
+    def unchoke(self):
+        print 'inside unchoke'
+        packet = struct.pack('!ib', 1, 1)
+        print "Here's the unchoke packet:", repr(packet)
+        self.sock.send(packet)
+        # pudb.set_trace()
+
+    def keep_alive(self):
+        print 'inside keep_alive'
+
     def write(self):
         pass
 
     def request(self):
+        # pudb.set_trace()
         print 'inside request'
         # TODO -- global lookup for id/int conversion
         print ('self.next request:', self.next_request, '\n',
                'piece size:', self.torrent.piece_length)
+
+        '''
+
+        '''
+
         packet = ''.join(struct.pack('!ibiii', 13, 6, self.next_request, 0,
                          self.torrent.piece_length))
         self.sock.send(packet)
-        self.next_request = None
 
     def cleanup(self):
         print 'cleaning up'
