@@ -54,27 +54,8 @@ class Reactor(object):
             self.trigger('logic')
             self.trigger('write')
             self.trigger('cleanup')
-            time.sleep(0.3)
+            time.sleep(0.25)
             counter += 1
-
-        '''
-        You only want to call the callbacks if the events actually happened.
-        Manage everything by timing / coordinating the callbacks.
-        '''
-
-        '''
-        How to manage requests:
-        - In the metainfo file is a list of ALL 20-byte SHA-1 hash values,
-          one for each piece
-        - Therefore, the total number of pieces is tdict['info']['pieces']/20
-        - Length is the length of the *file* in bytes
-        - In the trivial case, I can just fire off 80 requests
-
-        How to store data:
-        - Can't just store it all in memory
-        - Once I complete a block, I can save it to disk
-            - How do I retrieve it?
-        '''
 
 
 def main():

@@ -135,7 +135,7 @@ class torrent():
                 if data:
                     print 'From {} received: {}'.format(i, repr(data))
                     self.initpeer(s, data)  # Initializing peers here
-            except socket.timeout:
+            except:
                 print '{} timed out on recv'.format(i)
                 continue
         else:
@@ -154,7 +154,6 @@ class torrent():
 
 
 def main():
-    over_there = tparser.bdecode('torrent.torrent')
     argparser = argparse.ArgumentParser()
     argparser.add_argument('torrent_path')
     args = argparser.parse_args()  # Getting path from command line

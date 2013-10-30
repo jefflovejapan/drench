@@ -4,6 +4,7 @@ import pudb
 import random
 import socket
 import hashlib
+import time
 
 
 class peer():
@@ -42,8 +43,8 @@ class peer():
             if len(bytes) == 0:
                 raise Exception('Got 0 bytes')
             self.process_input(bytes)
-        except socket.error as e:
-            print e.message
+        except:
+            raise Exception("Couldn't read from", self.sock.fileno())
 
     def process_input(self, bytes):
         while bytes:
@@ -87,8 +88,8 @@ class peer():
 
     def get_message_id(self, instr):
         self.save_state['message_id'] = struct.unpack('b', instr[0])[0]
-        print 'message_id is', \
-              self.message_codes[self.save_state['message_id']]
+        print ('message_id is',
+               self.message_codes[self.save_state['message_id']])
         self.save_state['state'] = self.states['reading_message']
         return instr[1:]
 
@@ -104,8 +105,8 @@ class peer():
             return instr
 
         if self.save_state['remainder']:
-            print "Inside get_message. The previous remainder was", \
-                  len(self.save_state['remainder'])
+            print ("Inside get_message. The previous remainder was",
+                   len(self.save_state['remainder']))
             print "The new contribution is", len(instr)
             instr = self.save_state['remainder'] + instr
             print 'total length of instr is', len(instr)
@@ -193,16 +194,16 @@ class peer():
     def ppiece(self, content):
         index, begin = struct.unpack('!ii', content[0:8])
         block = content[8:]
-        if hashlib.sha1(block).digest() == \
-                self.torrent.torrent_dict['info']['pieces'][20*index:20*index+20]:
+        if hashlib.sha1(block).digest() == (self.torrent.torrent_dict['info']
+                                            ['pieces'][20*index:20*index+20]):
             print 'hash matches'
             print ('writing piece {}. Length is '
                    '{}').format(repr(block)[:10] + '...', len(block))
             self.torrent.outfile.seek(index*self.torrent.piece_length)
             self.torrent.outfile.write(block)
         else:
-            pudb.set_trace()
-            # raise Exception("hash of piece doesn't match hash in torrent_dict")
+            raise Exception("hash of piece doesn't"
+                            "match hash in torrent_dict")
 
         # TODO -- add check for hash equality
         self.torrent.bitfield[index] = True
@@ -219,12 +220,16 @@ class peer():
         print 'inside logic'
         # TODO -- Why do I need this check? Why would a responsive socket
         # not send me a bitfield?
+        # pudb.set_trace()
         if self.bitfield:
             self.valid_indices = []
+
             for i in range(len(self.torrent.bitfield)):
-                if self.torrent.bitfield[i] is False \
-                   and self.bitfield[i] is True:
+                if (self.torrent.bitfield[i] is False
+                        and self.bitfield[i] is True):
+
                     self.valid_indices.append(i)
+            print self.valid_indices
             if not self.valid_indices:
                 self.torrent.outfile.close()
                 return
@@ -234,21 +239,16 @@ class peer():
                     print 'Setting next_request = {}'.format(next_request)
                     self.torrent.queued_requests.append(next_request)
                     self.next_request = next_request
+                    self.reactor.subscribed['write'].append(self.request)
                     break
-            self.reactor.subscribed['write'].append(self.request)
 
     def interested(self):
-        print 'inside interested'
         packet = ''.join(struct.pack('!ib', 1, 2))
-        print "Here's the interested packet:", repr(packet)
         self.sock.send(packet)
 
     def unchoke(self):
-        print 'inside unchoke'
         packet = struct.pack('!ib', 1, 1)
-        print "Here's the unchoke packet:", repr(packet)
         self.sock.send(packet)
-        # pudb.set_trace()
 
     def keep_alive(self):
         print 'inside keep_alive'
@@ -264,7 +264,9 @@ class peer():
 
         packet = ''.join(struct.pack('!ibiii', 13, 6, self.next_request, 0,
                          self.torrent.piece_length))
-        self.sock.send(packet)
+        bytes = self.sock.send(packet)
+        if bytes != len(packet):
+            raise Exception('couldnt send request')
 
     def cleanup(self):
         print 'cleaning up'
