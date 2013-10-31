@@ -38,7 +38,8 @@ class torrent():
             self.multifile = False
 
         if self.multifile:
-            self.outfile = switchboard(self.torrent_dict['info']['files'])
+            self.outfile = switchboard(self.torrent_dict['info']['name'],
+                                       self.torrent_dict['info']['files'])
         else:
             outfile = open('{}'.format(self.torrent_dict['info']['name']), 'w')
             self.outfile = outfile
@@ -53,7 +54,10 @@ class torrent():
 
     @property
     def length(self):
-        return self.torrent_dict['info']['length']
+        if not self.multifile:
+            return self.torrent_dict['info']['length']
+        else:
+            return sum([i.length for i in self.outfile.outfiles])
 
     @property
     def last_piece_length(self):
@@ -72,7 +76,7 @@ class torrent():
         payload['port'] = self.port
         payload['uploaded'] = 0
         payload['downloaded'] = 0
-        payload['left'] = self.torrent_dict['info']['length']
+        payload['left'] = self.length
         payload['compact'] = 1
         payload['supportcrypto'] = 1
         payload['event'] = 'started'
@@ -87,8 +91,18 @@ class torrent():
 
         assert self.torrent_dict['info']
         payload = self.build_payload()
-        self.r = requests.get(self.torrent_dict['announce'],
-                              params=payload)
+
+        # Request string:
+        # udp://tracker.publicbt.com:80/announce?uploaded=0&compact=1&info_hash
+        # =%C1%06%17%3CD%AC%E9%9FW%FC%B85a%AE%FDn%AE%8Aoz&event=started&
+        # downloaded=0&peer_id=-TR2820-wa0n562rl3lu&port=55308&supportcrypto=1
+        # &left=222639535
+
+        if self.torrent_dict['announce'].startswith('udp'):
+            print 'deal with UDP'
+        else:
+            self.r = requests.get(self.torrent_dict['announce'],
+                                  params=payload)
         print len(self.r.text)
 
         # Decoding response from tracker
