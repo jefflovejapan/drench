@@ -32,10 +32,16 @@ class torrent():
             raise ValueError('Torrent file has bad hash')
         self.bitfield.setall(False)
         self.reactor = reactor.Reactor()
-        self.multifile = True if self.torrent_dict['info']['files'] else False
-        print self.multifile
-        self.outfile = open('{}'.format(self.torrent_dict['info']['name']),
-                            'w')
+        if 'files' in self.torrent_dict['info']:
+            self.multifile = True
+        else:
+            self.multifile = False
+
+        if self.multifile:
+            self.outfile = switchboard(self.torrent_dict['info']['files'])
+        else:
+            outfile = open('{}'.format(self.torrent_dict['info']['name']), 'w')
+            self.outfile = outfile
 
     @property
     def piece_length(self):
