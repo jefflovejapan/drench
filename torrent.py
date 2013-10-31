@@ -6,6 +6,7 @@ import argparse
 import pudb
 import reactor
 import peer
+from switchboard import switchboard
 from bitarray import bitarray
 
 
@@ -14,6 +15,7 @@ class torrent():
     def __init__(self, torrent_path, port=55308):
         torrent_dict = tparser.bdecode(torrent_path)
         self.torrent_dict = torrent_dict
+        # pudb.set_trace()
         self.peerdict = {}
         self.peer_ips = []
         self.port = port
@@ -30,6 +32,8 @@ class torrent():
             raise ValueError('Torrent file has bad hash')
         self.bitfield.setall(False)
         self.reactor = reactor.Reactor()
+        self.multifile = True if self.torrent_dict['info']['files'] else False
+        print self.multifile
         self.outfile = open('{}'.format(self.torrent_dict['info']['name']),
                             'w')
 
