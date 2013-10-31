@@ -1,4 +1,5 @@
 import os
+from collections import namedtuple
 
 
 class switchboard():
@@ -6,7 +7,9 @@ class switchboard():
         self.dirname = dirname + '/'
         self.filelist = filelist[:]
         os.mkdir(self.dirname)
-        self.outfile = open(os.getcwd() + '/' + self.dirname + 'muff.txt', 'w')
-        self.outfile.write('o hai')
-        self.outfile.close()
-        print 'created switchboard'
+        outfile = namedtuple('destination', 'path length')
+        # Need the 0 index here because ['path'] is a 1-element list
+
+        outfiles = [outfile(open(os.getcwd() + '/' + self.dirname +
+                    i['path'][0], 'w'), i['length']) for i in self.filelist]
+        print outfiles
