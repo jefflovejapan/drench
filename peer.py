@@ -5,6 +5,7 @@ import random
 import socket
 import hashlib
 import time
+import os
 
 
 class peer():
@@ -232,6 +233,7 @@ class peer():
             print self.valid_indices
             if not self.valid_indices:
                 self.torrent.outfile.close()
+                os.system(' '.join(('open', self.torrent.outfile.name)))
                 return
             while 1:
                 next_request = random.choice(self.valid_indices)
@@ -239,6 +241,7 @@ class peer():
                     print 'Setting next_request = {}'.format(next_request)
                     self.torrent.queued_requests.append(next_request)
                     self.next_request = next_request
+                    print 'Self.next_request is', self.next_request
                     self.reactor.subscribed['write'].append(self.request)
                     break
 
@@ -257,13 +260,17 @@ class peer():
         pass
 
     def request(self):
+        # pudb.set_trace()
         print 'inside request'
         # TODO -- global lookup for id/int conversion
         print ('self.next request:', self.next_request, '\n',
                'piece size:', self.torrent.piece_length)
-
+        if self.next_request == self.torrent.num_pieces - 1:
+            piece_length = self.torrent.last_piece_length
+        else:
+            piece_length = self.torrent.piece_length
         packet = ''.join(struct.pack('!ibiii', 13, 6, self.next_request, 0,
-                         self.torrent.piece_length))
+                         piece_length))
         bytes = self.sock.send(packet)
         if bytes != len(packet):
             raise Exception('couldnt send request')

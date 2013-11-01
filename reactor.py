@@ -54,7 +54,7 @@ class Reactor(object):
             self.trigger('logic')
             self.trigger('write')
             self.trigger('cleanup')
-            time.sleep(0.25)
+            # time.sleep(0.2)
             counter += 1
 
 
