@@ -7,14 +7,24 @@ class switchboard():
     def __init__(self, dirname, filelist):
         self.dirname = dirname
         self.filelist = filelist[:]
+        self.outfiles = []
+        self.index = 0
         os.mkdir(self.dirname)
         os.chdir(os.getcwd() + '/' + self.dirname)
         outfile = namedtuple('destination', 'path length')
-        # Need the 0 index here because ['path'] is a 1-element list
-        self.outfiles = [outfile(open(i['path'][0], 'w'), i['length']) for i in
-                         self.filelist]
+
+        for i in filelist:
+            addpath = '/'.join(i['path'][:-1])
+            if addpath:
+                if addpath not in os.listdir(os.getcwd()):
+                    os.makedirs(addpath)
+                thisfile = outfile(path=open('/'.join((addpath, i['path']
+                                             [-1])), 'w'), length=i['length'])
+            else:
+                thisfile = outfile(path=open(i['path'][-1], 'w'),
+                                   length=i['length'])
+            self.outfiles.append(thisfile)
         print self.outfiles
-        self.index = 0
 
     def seek(self, index):
         self.index = index

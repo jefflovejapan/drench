@@ -100,10 +100,11 @@ class torrent():
         # &left=222639535
 
         if self.torrent_dict['announce'].startswith('udp'):
-            self.r = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            # TODO -- make this work
-            message = urllib.urlencode(payload)
-            pudb.set_trace()
+            raise Exception('need to deal with UDP')
+            # self.r = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # # TODO -- make this work
+            # message = urllib.urlencode(payload)
+            # pudb.set_trace()
 
         else:
             self.r = requests.get(self.torrent_dict['announce'],
@@ -152,11 +153,14 @@ class torrent():
             print i  # just want to see who i'm talking to
             s = socket.socket()
             s.setblocking(True)
-            s.settimeout(0.5)
+            s.settimeout(5)
             try:
                 s.connect(i)
             except socket.timeout:
                 print '{} timed out on connect'.format(i)
+                continue
+            except socket.error:
+                print '{} threw a socket error'.format(i)
                 continue
             s.send(packet)
             try:
