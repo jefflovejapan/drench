@@ -34,8 +34,6 @@ class switchboard():
                     print ('just wrote {} bytes to '
                            '{}').format(len(block[:bytes_writable]),
                                         self.outfiles[-j].path)
-                    if file_end <= self.index + len(block):
-                        self.outfiles[-j].path.close()
                     block = block[bytes_writable:]
                     self.index = self.index + bytes_writable
                     j -= 1
@@ -45,6 +43,10 @@ class switchboard():
             else:
                 raise Exception('some wacky shit happened trying to'
                                 'write to files')
+
+    def close(self):
+        for i in self.outfiles:
+            i.path.close()
 
 
 def main():
@@ -58,6 +60,8 @@ def main():
     myswitchboard2 = switchboard('testing2', mylist)
     myswitchboard2.seek(240)
     myswitchboard2.write(chr(0)*180)
+    myswitchboard.close()
+    myswitchboard2.close()
 
 
 if __name__ == '__main__':
