@@ -6,6 +6,7 @@ import argparse
 import pudb
 import reactor
 import peer
+import urllib
 from switchboard import switchboard
 from bitarray import bitarray
 
@@ -99,7 +100,11 @@ class torrent():
         # &left=222639535
 
         if self.torrent_dict['announce'].startswith('udp'):
-            print 'deal with UDP'
+            self.r = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # TODO -- make this work
+            message = urllib.urlencode(payload)
+            pudb.set_trace()
+
         else:
             self.r = requests.get(self.torrent_dict['announce'],
                                   params=payload)
