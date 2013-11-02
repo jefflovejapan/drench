@@ -13,7 +13,7 @@ class peer():
     # takes place using socket before peer init
     def __init__(self, sock, reactor, torrent, data):
         self.sock = sock
-        self.sock.setblocking(False)
+        self.sock.setblocking(True)
         self.reactor = reactor
         self.torrent = torrent
         self.valid_indices = []
@@ -38,14 +38,14 @@ class peer():
         return self.sock.getpeername()
 
     def read(self):
-        try:
-            bytes = self.sock.recv(self.max_size)
-            print 'Just received', len(bytes), 'bytes'
-            if len(bytes) == 0:
-                raise Exception('Got 0 bytes')
-            self.process_input(bytes)
-        except:
-            raise Exception("Couldn't read from", self.sock.fileno())
+        # try:
+        bytes = self.sock.recv(self.max_size)
+        print 'Just received', len(bytes), 'bytes'
+        if len(bytes) == 0:
+            raise Exception('Got 0 bytes from fileno', self.fileno())
+        self.process_input(bytes)
+        # except:
+        #     print "Couldn't read from", self.sock.fileno()
 
     def process_input(self, bytes):
         while bytes:
@@ -264,7 +264,7 @@ class peer():
         print 'inside request'
         # TODO -- global lookup for id/int conversion
         print ('self.next request:', self.next_request, '\n',
-               'piece size:', self.torrent.piece_length)
+               'piece size:', self.torrent.piece_length, 'from', self.fileno())
         if self.next_request == self.torrent.num_pieces - 1:
             piece_length = self.torrent.last_piece_length
         else:
