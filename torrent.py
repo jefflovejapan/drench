@@ -17,12 +17,12 @@ class torrent():
         torrent_dict = tparser.bdecode(torrent_path)
         self.torrent_dict = torrent_dict
         # pudb.set_trace()
-        self.peerdict = {}
+        self.peer_dict = {}
         self.peer_ips = []
         self.port = port
         self.r = None
         self.tracker_response = None
-        self.peerdict = {}
+        self.peer_dict = {}
         self.hash_string = None
         self.queued_requests = []
         mybytes = divmod(len(self.torrent_dict['info']['pieces']), 20)
@@ -149,6 +149,9 @@ class torrent():
         print "Here's my packet {}".format(repr(packet))
         # TODO -- add some checks in here so that I'm talking
         # to a maximum of 30 peers
+
+        # TODO -- think about why i'm deleting self.peer_ips.
+        # What was the point of it? Why won't I need it?
         for i in self.peer_ips:
             print i  # just want to see who i'm talking to
             s = socket.socket()
@@ -181,9 +184,16 @@ class torrent():
         '''
 
         tpeer = peer.peer(sock, self.reactor, self, data)
-        self.peerdict[sock] = tpeer
+        self.peer_dict[sock] = tpeer
         self.reactor.select_list.append(tpeer)
         # Reactor now listening to tpeer object
+
+    def kill_peer(self, tpeer):
+        thispeer = self.peer_dict.pop(tpeer.sock)
+        print 'peer with fileno {} killing itself'.format(thispeer.fileno())
+        self.reactor.select_list.remove(thispeer)
+        # TODO -- do I need to clear this peer out of memory?
+        # How do I do that?
 
 
 def main():

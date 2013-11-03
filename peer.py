@@ -42,10 +42,9 @@ class peer():
         bytes = self.sock.recv(self.max_size)
         print 'Just received', len(bytes), 'bytes'
         if len(bytes) == 0:
-            raise Exception('Got 0 bytes from fileno', self.fileno())
+            print 'Got 0 bytes from fileno {}.'.format(self.fileno())
+            self.torrent.kill_peer(self)
         self.process_input(bytes)
-        # except:
-        #     print "Couldn't read from", self.sock.fileno()
 
     def process_input(self, bytes):
         while bytes:
@@ -208,7 +207,7 @@ class peer():
 
         # TODO -- add check for hash equality
         self.torrent.bitfield[index] = True
-        print 'My bitfield:', self.torrent.bitfield
+        # print 'My bitfield:', self.torrent.bitfield
         self.reactor.subscribed['logic'].append(self.logic)
 
     def pcancel(self):
@@ -230,7 +229,7 @@ class peer():
                         and self.bitfield[i] is True):
 
                     self.valid_indices.append(i)
-            print self.valid_indices
+            print len(self.valid_indices), 'more pieces to go'
             if not self.valid_indices:
                 self.torrent.outfile.close()
                 os.system(' '.join(('open', self.torrent.outfile.name)))
@@ -241,7 +240,8 @@ class peer():
                     print 'Setting next_request = {}'.format(next_request)
                     self.torrent.queued_requests.append(next_request)
                     self.next_request = next_request
-                    print 'Self.next_request is', self.next_request
+                    print ('Self.next_request is', self.next_request, 'from',
+                           self.fileno())
                     self.reactor.subscribed['write'].append(self.request)
                     break
 
@@ -276,5 +276,5 @@ class peer():
             raise Exception('couldnt send request')
 
     def cleanup(self):
-        print 'cleaning up'
+        # print 'cleaning up'
         self.torrent.queued_requests = []

@@ -42,15 +42,16 @@ class Reactor(object):
                     newsocket, addr = self.sock.accept()
                     self.select_list.append(newsocket)
                 else:
-                    print 'fileno', i.fileno(), 'ready to read'
-                    self.subscribed['read'].append(i.read)
+                    # print 'fileno', i.fileno(), 'ready to read'
+                    # self.subscribed['read'].append(i.read)
+                    i.read()
 
             wclos = i.write
             self.subscribed['write'].append(wclos)
             cclos = i.cleanup
             self.subscribed['cleanup'].append(cclos)
 
-            self.trigger('read')
+            # self.trigger('read')
             self.trigger('logic')
             self.trigger('write')
             self.trigger('cleanup')
