@@ -2,6 +2,17 @@ import os
 from collections import namedtuple
 import pudb
 
+outfile = namedtuple('destination', 'path length')
+
+
+def build_dirs(files):
+    for i in files:
+        # pudb.set_trace()
+        if len(i['path']) > 1:
+            addpath = os.path.join(*i['path'][:-1])
+            if addpath and addpath not in os.listdir(os.getcwd()):
+                os.makedirs(addpath)
+
 
 class switchboard():
     def __init__(self, dirname, filelist):
@@ -11,18 +22,10 @@ class switchboard():
         self.index = 0
         os.mkdir(self.dirname)
         os.chdir(os.getcwd() + '/' + self.dirname)
-        outfile = namedtuple('destination', 'path length')
-
-        for i in filelist:
-            addpath = '/'.join(i['path'][:-1])
-            if addpath:
-                if addpath not in os.listdir(os.getcwd()):
-                    os.makedirs(addpath)
-                thisfile = outfile(path=open('/'.join((addpath, i['path']
-                                             [-1])), 'w'), length=i['length'])
-            else:
-                thisfile = outfile(path=open(i['path'][-1], 'w'),
-                                   length=i['length'])
+        build_dirs(self.filelist)
+        for i in self.filelist:
+            thisfile = outfile(path=open(os.path.join(*i['path']), 'w'),
+                               length=i['length'])
             self.outfiles.append(thisfile)
         print self.outfiles
 

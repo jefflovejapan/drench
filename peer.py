@@ -93,7 +93,6 @@ class peer():
         self.save_state['state'] = self.states['reading_message']
         return instr[1:]
 
-    # TODO - THE PROBLEM IS THAT THE SIZE KEEPS DOUBLING WHEN IT SHOULDN'T BE
     def get_message(self, instr):
 
         # Since one byte is getting used up for the message_id
