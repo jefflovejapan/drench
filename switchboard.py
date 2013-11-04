@@ -14,20 +14,20 @@ def build_dirs(files):
                 print 'just made path', addpath
 
 
-def get_want_file_pos(filelist):
+def get_want_file_pos(file_list):
     want_file_pos = []
     print '\nFiles contained:\n'
-    for i in filelist:
+    for i in file_list:
         print(os.path.join(*i['path']))
     while 1:
         all_answer = raw_input('\nDo you want all these files? (y/n): ')
         if all_answer in ('y', 'n'):
             break
     if all_answer == 'y':
-        want_file_pos = range(len(filelist))
+        want_file_pos = range(len(file_list))
         return want_file_pos
     if all_answer == 'n':
-        for j, tfile in enumerate(filelist):
+        for j, tfile in enumerate(file_list):
             while 1:
                 file_answer = raw_input('Do you want {}? '
                                         '(y/n): '.format(os.path.join
@@ -39,93 +39,90 @@ def get_want_file_pos(filelist):
                 want_file_pos.append(j)
         print "Here are all the files you want:"
         for k in want_file_pos:
-            print os.path.join(*filelist[k]['path'])
+            print os.path.join(*file_list[k]['path'])
         return want_file_pos
 
 
-def get_file_starts(filelist):
+def get_file_starts(file_list):
     starts = []
     total = 0
-    for i in filelist:
-        total += i['length']
+    for i in file_list:
         starts.append(total)
+        total += i['length']
+    print starts
     return starts
 
 
+def get_write_file(index=0, file_starts=[0], files=[], outfiles=[]):
+    i = 1
+    while i <= len(file_starts) + 1:
+        start = file_starts[-i]
+        if start <= index:
+            tfile = files[-i]
+            break
+        else:
+            i += 1
+    j = 1
+    while j <= len(outfiles) + 1:
+        if outfiles[-j].path == os.path.join(*tfile['path']):
+            return outfiles[-j]
+        else:
+            j += 1
+    else:
+        raise Exception("Shit isn't matching")
+
+
+def get_file_start():
+    pass
+
+
 class switchboard():
-    def __init__(self, dirname, filelist):
+    def __init__(self, dirname, file_list):
         self.dirname = dirname
-        self.filelist = filelist[:]
-        self.filestarts = get_file_starts(filelist)
-        self.want_file_pos = get_want_file_pos(self.filelist)
-
-        # want_files is the list of files that i'm interested in. For any
-        # index i, i can:
-        #   - find out which file it belongs to using self.filestarts
-        #   - find out if I'm interested in the file by:
-        #       - getting the file from filelist
-        #       - seeing if i'm interested by checking against wantfiles
-        #
-        # Alternatively, I could:
-        #   - find out which file (really index) it belongs to using
-        #     self.filestarts
-        #   - find out if i'm interested by:
-        #       - seeing if that index is in wantfiles
-
+        self.file_list = file_list[:]
+        self.file_starts = get_file_starts(file_list)
+        self.want_file_pos = get_want_file_pos(self.file_list)
         self.outfiles = []
         self.index = 0
         os.mkdir(self.dirname)
         print 'making directory', self.dirname
         os.chdir(os.path.join(os.getcwd(), self.dirname))
-        build_dirs(self.filelist[index] for index in self.want_file_pos)
+        build_dirs(self.file_list[index] for index in self.want_file_pos)
         for i in self.want_file_pos:
-            thisfile = outfile(path=open(os.path.join(*self.filelist[i]
+            thisfile = outfile(path=open(os.path.join(*self.file_list[i]
                                          ['path']), 'w'),
-                               length=self.filelist[i]['length'])
+                               length=self.file_list[i]['length'])
             self.outfiles.append(thisfile)
 
     def seek(self, index):
         self.index = index
 
-# Write is taking a block
-# We've already seeked to the relevant spot
-# If we've got data left over after we write our block and we're NOT
-# interested in the adjacent file, we can just throw it away.
-
-# Right now I have:
-#   self.index -- the current writing position
-#   self.outfiles -- the list of file objects that I'm writing to
-# What I need:
-#   a list to keep track of only the files that I'm interested in.
-#
-# If self.index is not in interested_file_starts:
-#   if len(block) > len(uninterested file)
-#   block = block[len(uninterested file)]
-#   self.index += len(uninterested file)
     def write(self, block):
-        abs_end = sum([i.length for i in self.outfiles])
-        j = 1
         while block:
-            while j <= len(self.outfiles):
-                file_start = abs_end - sum(k.length for k in
-                                           self.outfiles[-j:])
-                file_end = file_start + self.outfiles[-j].length
-                if self.index >= file_start:
-                    bytes_writable = file_end - self.index
-                    self.outfiles[-j].path.seek(self.index - file_start)
-                    self.outfiles[-j].path.write(block[:bytes_writable])
-                    print ('just wrote {} bytes to '
-                           '{}').format(len(block[:bytes_writable]),
-                                        self.outfiles[-j].path)
-                    block = block[bytes_writable:]
-                    self.index = self.index + bytes_writable
-                    j -= 1
-                    break
+            file_start = get_file_start(index=self.index,
+                                        file_starts=self.file_starts)
+            write_file = get_write_file(index=self.index,
+                                        files=self.file_list,
+                                        file_starts=self.file_starts,
+                                        outfiles=self.outfiles)
+            file_index = self.index - file_start
+            write_file.seek(file_index)
+            file_end = (self.file_starts
+                        [self.file_starts.index(file_start) + 1] - 1)
+
+            bytes_writable = file_end - file_index
+            if bytes_writable < len(block):
+                write_file.write(block[:bytes_writable])
+
+                # This will take us to the next index value in file_starts
+                next_index = self.outfiles.index(write_file) + 1
+                next_start = self.file_starts[next_index]
+                self.index = next_start
+                # Moving ahead by the difference
+                if block[next_start-file_end]:
+                    block = block[next_start-file_end:]
                 else:
-                    j += 1
-            else:
-                raise Exception('some wacky shit happened trying to'
-                                'write to files')
+                    block = None
 
     def close(self):
         for i in self.outfiles:
@@ -133,18 +130,22 @@ class switchboard():
 
 
 def main():
-    mylist = [{'path': ['biz.pdf'], 'length': 300},
-              {'path': ['baz.txt'], 'length': 100},
-              {'path': ['ziz'], 'length': 250}]
-    myswitchboard = switchboard('testing', mylist)
-    myswitchboard.seek(350)
-    myswitchboard.write(chr(0)*80)
-    os.chdir('/Users/jeffblagdon/Developer/torrents')
-    myswitchboard2 = switchboard('testing2', mylist)
-    myswitchboard2.seek(240)
-    myswitchboard2.write(chr(0)*180)
-    myswitchboard.close()
-    myswitchboard2.close()
+    print get_write_file(index=100,
+                         file_starts=[0, 150, 200],
+                         files=['cat', 'dog', 'bird'])
+
+    print get_write_file(index=250,
+                         file_starts=[0, 150, 200],
+                         files=['cat', 'dog', 'bird'])
+
+    pudb.set_trace()
+    print get_write_file(index=175,
+                         file_starts=[0, 150, 200],
+                         files=['cat', 'dog', 'bird'])
+
+    print get_write_file(index=0,
+                         file_starts=[0, 150, 200],
+                         files=['cat', 'dog', 'bird'])
 
 
 if __name__ == '__main__':
