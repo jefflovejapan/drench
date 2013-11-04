@@ -37,7 +37,6 @@ class torrent():
             self.multifile = True
         else:
             self.multifile = False
-
         if self.multifile:
             self.outfile = switchboard(self.torrent_dict['info']['name'],
                                        self.torrent_dict['info']['files'])
@@ -93,23 +92,12 @@ class torrent():
         assert self.torrent_dict['info']
         payload = self.build_payload()
 
-        # Request string:
-        # udp://tracker.publicbt.com:80/announce?uploaded=0&compact=1&info_hash
-        # =%C1%06%17%3CD%AC%E9%9FW%FC%B85a%AE%FDn%AE%8Aoz&event=started&
-        # downloaded=0&peer_id=-TR2820-wa0n562rl3lu&port=55308&supportcrypto=1
-        # &left=222639535
-
         if self.torrent_dict['announce'].startswith('udp'):
             raise Exception('need to deal with UDP')
-            # self.r = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            # # TODO -- make this work
-            # message = urllib.urlencode(payload)
-            # pudb.set_trace()
 
         else:
             self.r = requests.get(self.torrent_dict['announce'],
                                   params=payload)
-        print len(self.r.text)
 
         # Decoding response from tracker
         self.tracker_response = tparser.bdecodes(self.r.text.encode('latin-1'))

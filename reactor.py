@@ -3,7 +3,12 @@ import socket
 import select
 import time
 import pudb
+from collections import namedtuple
 from bitarray import bitarray
+
+
+select_response = namedtuple('select_response',
+                             'readable writable exceptional')
 
 
 class Reactor(object):
@@ -32,18 +37,21 @@ class Reactor(object):
         self.subscribed[event] = []              # Zero everything out
 
     def event_loop(self):
-        counter = 0
         while 1:
-            print 'Counter at', counter
-            rrlist, _, _ = select.select(self.select_list, [], [], 5)
-            for i in rrlist:  # Doesn't require if test
+            doable_lists = select_response(*select.select(self.select_list,
+                                                          self.select_list,
+                                                          self.select_list,
+                                                          1))
+            if not doable_lists.readable:
+                time.sleep(1)
+                continue
+
+            for i in doable_lists.readable:  # Doesn't require if test
                 if i == self.sock:
                     # TODO -- expand this into creating new peers
                     newsocket, addr = self.sock.accept()
                     self.select_list.append(newsocket)
                 else:
-                    # print 'fileno', i.fileno(), 'ready to read'
-                    # self.subscribed['read'].append(i.read)
                     i.read()
 
             wclos = i.write
@@ -51,12 +59,9 @@ class Reactor(object):
             cclos = i.cleanup
             self.subscribed['cleanup'].append(cclos)
 
-            # self.trigger('read')
             self.trigger('logic')
             self.trigger('write')
             self.trigger('cleanup')
-            # time.sleep(0.2)
-            counter += 1
 
 
 def main():

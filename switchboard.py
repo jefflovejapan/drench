@@ -1,6 +1,7 @@
 import os
-from collections import namedtuple
 import pudb
+from collections import namedtuple
+from pprint import pprint
 
 outfile = namedtuple('destination', 'path length')
 
@@ -27,7 +28,9 @@ class switchboard():
             thisfile = outfile(path=open(os.path.join(*i['path']), 'w'),
                                length=i['length'])
             self.outfiles.append(thisfile)
-        print self.outfiles
+        print '\n\nFiles contained in torrent:'
+        pprint(self.outfiles)
+        print 'Torrent contains {} files'.format(len(self.outfiles))
 
     def seek(self, index):
         self.index = index

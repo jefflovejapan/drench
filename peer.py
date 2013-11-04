@@ -38,7 +38,6 @@ class peer():
         return self.sock.getpeername()
 
     def read(self):
-        # try:
         bytes = self.sock.recv(self.max_size)
         print 'Just received', len(bytes), 'bytes'
         if len(bytes) == 0:
@@ -70,8 +69,6 @@ class peer():
                 # save_state['length'] is based on what the peer *says*, not
                 # on the length of the actual message
                 self.save_state['length'] = struct.unpack('!i', instr[0:4])[0]
-                print ("Client says message is {} bytes "
-                       "long").format(self.save_state['length'])
                 if self.save_state['length'] == 0:
                     self.keep_alive()
                     self.save_state['state'] = self.states['reading_length']
