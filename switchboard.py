@@ -1,8 +1,9 @@
 import os
 import pudb
+import bitarray
 from collections import namedtuple
 
-outfile = namedtuple('destination', 'path length')
+outfile = namedtuple('destination', 'fobj length')
 
 
 def build_dirs(files):
@@ -64,7 +65,8 @@ def get_write_file(index=0, file_starts=[0], files=[], outfiles=[]):
             i += 1
     j = 1
     while j <= len(outfiles) + 1:
-        if outfiles[-j].path == os.path.join(*tfile['path']):
+        pudb.set_trace()
+        if outfiles[-j].fobj.name == os.path.join(*tfile['path']):
             return outfiles[-j]
         else:
             j += 1
@@ -72,8 +74,31 @@ def get_write_file(index=0, file_starts=[0], files=[], outfiles=[]):
         raise Exception("Shit isn't matching")
 
 
-def get_file_start():
-    pass
+def get_file_start(index=0, file_starts=[]):
+    i = 1
+    while i <= len(file_starts) + 1:
+        if index >= file_starts[-i]:
+            return file_starts[-i]
+        else:
+            i += 1
+
+
+def get_interested(files=[], want_file_pos=[]):
+    piece_indices = bitarray.bitarray()
+    next_index = 0
+    file_index = 0
+    j = 0
+    while j < len(files):
+        if file_index in want_file_pos:
+            piece_indices.extend(b'1'*files[file_index]['length'])
+            next_index += files[file_index]['length']
+            file_index += 1
+        else:
+            piece_indices.extend(b'0'*files[file_index]['length'])
+            next_index += files[file_index]['length']
+            file_index += 1
+        j += 1
+    return piece_indices
 
 
 class switchboard():
@@ -89,16 +114,21 @@ class switchboard():
         os.chdir(os.path.join(os.getcwd(), self.dirname))
         build_dirs(self.file_list[index] for index in self.want_file_pos)
         for i in self.want_file_pos:
-            thisfile = outfile(path=open(os.path.join(*self.file_list[i]
+            thisfile = outfile(fobj=open(os.path.join(*self.file_list[i]
                                          ['path']), 'w'),
                                length=self.file_list[i]['length'])
             self.outfiles.append(thisfile)
+        self.interested_indices = get_interested(files=self.file_list,
+                                                 want_file_pos=
+                                                 self.want_file_pos)
+        # file_list still OK after init. Who touches switchboard next?
 
     def seek(self, index):
         self.index = index
 
     def write(self, block):
         while block:
+            pudb.set_trace()
             file_start = get_file_start(index=self.index,
                                         file_starts=self.file_starts)
             write_file = get_write_file(index=self.index,
@@ -126,27 +156,4 @@ class switchboard():
 
     def close(self):
         for i in self.outfiles:
-            i.path.close()
-
-
-def main():
-    print get_write_file(index=100,
-                         file_starts=[0, 150, 200],
-                         files=['cat', 'dog', 'bird'])
-
-    print get_write_file(index=250,
-                         file_starts=[0, 150, 200],
-                         files=['cat', 'dog', 'bird'])
-
-    pudb.set_trace()
-    print get_write_file(index=175,
-                         file_starts=[0, 150, 200],
-                         files=['cat', 'dog', 'bird'])
-
-    print get_write_file(index=0,
-                         file_starts=[0, 150, 200],
-                         files=['cat', 'dog', 'bird'])
-
-
-if __name__ == '__main__':
-    main()
+            i.fobj.close()

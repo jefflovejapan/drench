@@ -16,7 +16,6 @@ class torrent():
     def __init__(self, torrent_path, port=55308):
         torrent_dict = tparser.bdecode(torrent_path)
         self.torrent_dict = torrent_dict
-        # pudb.set_trace()
         self.peer_dict = {}
         self.peer_ips = []
         self.port = port
@@ -41,6 +40,7 @@ class torrent():
             self.outfile = switchboard(self.torrent_dict['info']['name'],
                                        self.torrent_dict['info']['files'])
         else:
+            raise Exception('Whoa, wtf')
             outfile = open('{}'.format(self.torrent_dict['info']['name']), 'w')
             self.outfile = outfile
 

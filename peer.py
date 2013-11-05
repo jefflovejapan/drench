@@ -134,7 +134,6 @@ class peer():
 
     # This is only getting called when I have a complete message
     def handle_message(self):
-        # pudb.set_trace()
         if self.save_state['message_id'] == 0:
             self.pchoke()
         elif self.save_state['message_id'] == 1:
@@ -182,7 +181,6 @@ class peer():
         self.interested()
         self.unchoke()
         self.reactor.subscribed['logic'].append(self.logic)
-        # pudb.set_trace()
 
     def prequest(self):
         print 'prequest'
@@ -216,15 +214,21 @@ class peer():
         print 'inside logic'
         # TODO -- Why do I need this check? Why would a responsive socket
         # not send me a bitfield?
-        # pudb.set_trace()
         if self.bitfield:
             self.valid_indices = []
 
             for i in range(len(self.torrent.bitfield)):
-                if (self.torrent.bitfield[i] is False
-                        and self.bitfield[i] is True):
+                if not self.torrent.multifile:
+                    if (self.torrent.bitfield[i] is False
+                            and self.bitfield[i] is True):
+                        self.valid_indices.append(i)
+                else:
+                    if (self.torrent.outfile.interested_indices[i] and
+                        not self.torrent.bitfield[i] and
+                            self.bitfield[i]):
 
-                    self.valid_indices.append(i)
+                        self.valid_indices.append(i)
+            pudb.set_trace()
             print len(self.valid_indices), 'more pieces to go'
             if not self.valid_indices:
                 self.torrent.outfile.close()
@@ -256,7 +260,6 @@ class peer():
         pass
 
     def request(self):
-        # pudb.set_trace()
         print 'inside request'
         # TODO -- global lookup for id/int conversion
         print ('self.next request:', self.next_request, '\n',
