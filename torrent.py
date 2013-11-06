@@ -24,18 +24,10 @@ class torrent():
         self.peer_dict = {}
         self.hash_string = None
         self.queued_requests = []
-        mybytes = divmod(len(self.torrent_dict['info']['pieces']), 20)
-        if mybytes[1] == 0:
-            self.bitfield = bitarray(len(self.torrent_dict['info']
-                                     ['pieces'])//20)
-        else:
-            raise ValueError('Torrent file has bad hash')
-        self.bitfield.setall(False)
         self.reactor = reactor.Reactor()
-        if 'files' in self.torrent_dict['info']:
-            self.multifile = True
-        else:
-            self.multifile = False
+        self.multifile = 'files' in self.torrent_dict['info']
+        
+        # If it's multifile, outfile is a switchboard
         if self.multifile:
             self.outfile = switchboard(dirname=self.torrent_dict['info']
                                        ['name'], file_list=self.torrent_dict
@@ -43,9 +35,16 @@ class torrent():
                                        self.piece_length, num_pieces=
                                        self.num_pieces)
         else:
-            raise Exception('Whoa, wtf')
-            outfile = open('{}'.format(self.torrent_dict['info']['name']), 'w')
-            self.outfile = outfile
+            # Outfile is a file object
+            self.outfile = open('{}'.format(self.torrent_dict['info']['name']), 'w')
+        mybytes = divmod(len(self.torrent_dict['info']['pieces']), 20)
+        if mybytes[1] == 0:
+            self.bitfield = bitarray(len(self.torrent_dict['info']
+                                     ['pieces'])//20)
+            pudb.set_trace()
+        else:
+            raise ValueError('Torrent file has bad hash')
+        self.bitfield.setall(False)
 
     @property
     def piece_length(self):

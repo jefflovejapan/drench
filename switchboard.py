@@ -3,7 +3,7 @@ import pudb
 import bitarray
 from collections import namedtuple
 
-outfile = namedtuple('destination', 'fobj length')
+outfile = namedtuple('outfile', 'fobj length')
 start_end_pair = namedtuple('start_end_pair', 'start end')
 
 
@@ -26,6 +26,7 @@ def get_want_file_pos(file_list):
         if all_answer in ('y', 'n'):
             break
     if all_answer == 'y':
+        # TODO -- Can have something simpler here when user wants everything
         want_file_pos = range(len(file_list))
         return want_file_pos
     if all_answer == 'n':
@@ -116,6 +117,8 @@ def get_head_tail(want_index=0, file_starts=[], num_pieces=0,
         next_file_start = file_starts[want_index + 1]
         while piece_pos * piece_length < next_file_start:
             piece_pos += 1
+
+        # We want the piece *before* the first one after the next file starts
         last_piece = piece_pos - 1
 
     # Or we blew it
@@ -125,43 +128,12 @@ def get_head_tail(want_index=0, file_starts=[], num_pieces=0,
     return start_end_pair(start=first_piece, end=last_piece)
 
 
-# def get_interested(files=[], want_file_pos=[], file_starts=[],
-#                    piece_length=0, num_pieces=0):
-#     print files, want_file_pos, file_starts, piece_length, num_pieces
-#     interested_bitfield = bitarray.bitarray()
-#     want_index = 0
-#     j = 0
-#     while j < num_pieces:
-#         piece_start = j * piece_length
-#         piece_end = piece_start + piece_length
-#         if want_index >= len(want_file_pos):
-
-#             # Hack. If our want index goes out of range it means
-#             # we're not interested in anything else. But we still need to
-#             # finish filling out the bitfield
-#             file_start = num_pieces * piece_length + 1  # hack
-#             file_end = file_start
-
-#         else:
-#             file_start = file_starts[want_file_pos[want_index]]
-#             file_end = file_start + files[want_file_pos[want_index]]
-#                        ['length']
-
-#         if piece_end < file_start:
-#             interested_bitfield.append(0)
-#             j += 1
-#         elif piece_end > file_start and piece_end <= file_end:
-#             interested_bitfield.append(1)
-#             j += 1
-#         elif piece_start >= file_start and piece_start < file_end:
-#             interested_bitfield.append(1)
-#             j += 1
-#         elif piece_start >= file_end:
-#             want_index += 1
-#         else:
-#             raise Exception('You fucked up')
-#     print interested_bitfield
-#     return interested_bitfield
+def build_bitfield(heads_and_tails=[], num_pieces=0):
+    this_bitfield = bitarray.bitarray('0'*num_pieces)
+    for i in heads_and_tails:
+        for j in range(i.start, i.end + 1):
+            this_bitfield[j] = True
+    return this_bitfield
 
 
 class switchboard():
@@ -175,7 +147,6 @@ class switchboard():
         self.outfiles = []
         self.index = 0
         os.mkdir(self.dirname)
-        print 'making directory', self.dirname
         os.chdir(os.path.join(os.getcwd(), self.dirname))
         build_dirs(self.file_list[index] for index in self.want_file_pos)
         for i in self.want_file_pos:
@@ -183,7 +154,8 @@ class switchboard():
                                          ['path']), 'w'),
                                length=self.file_list[i]['length'])
             self.outfiles.append(thisfile)
-        self.heads_and_tails = get_heads_tails
+        heads_and_tails = get_heads_tails
+        self.bitfield = build_bitfield(heads_and_tails, num_pieces=num_pieces)
 
     def seek(self, index):
         self.index = index
@@ -220,30 +192,33 @@ class switchboard():
             i.fobj.close()
 
 
-def main():
-    pudb.set_trace()
-    files = [{'length': 3}, {'length': 3}, {'length': 3}, {'length': 3},
-             {'length': 3}]
-    want_file_pos = [1, 3]
-    piece_length = 4
-    file_length = 3
-    file_starts = [i * file_length for i in range(len(files))]
-    num_pieces = 4
-    print 'case 1'
-    print get_heads_tails(want_file_pos=want_file_pos, file_starts=file_starts,
-                          num_pieces=num_pieces, piece_length=piece_length)
+# def main():
+#     files = [{'length': 3}, {'length': 3}, {'length': 3}, {'length': 3},
+#              {'length': 3}]
+#     want_file_pos = [1, 3]
+#     piece_length = 4
+#     file_length = 3
+#     file_starts = [i * file_length for i in range(len(files))]
+#     num_pieces = 4
+#     print 'case 1'
+#     heads_tails = get_heads_tails(want_file_pos=want_file_pos, file_starts=file_starts,
+#                           num_pieces=num_pieces, piece_length=piece_length)
+#     print heads_tails
+#     print build_bitfield(heads_tails, num_pieces)
 
-    files = [{'length': 4}, {'length': 4}, {'length': 4}, {'length': 4},
-             {'length': 4}]
-    want_file_pos = [1]
-    piece_length = 3
-    file_length = 4
-    file_starts = [i * file_length for i in range(len(files))]
-    num_pieces = 4
-    print 'case 2'
-    print get_heads_tails(want_file_pos=want_file_pos, file_starts=file_starts,
-                          num_pieces=num_pieces, piece_length=piece_length)
+#     files = [{'length': 4}, {'length': 4}, {'length': 4}, {'length': 4},
+#              {'length': 4}]
+#     want_file_pos = [1]
+#     piece_length = 3
+#     file_length = 4
+#     file_starts = [i * file_length for i in range(len(files))]
+#     num_pieces = 4
+#     print 'case 2'
+#     heads_tails = get_heads_tails(want_file_pos=want_file_pos, file_starts=file_starts,
+#                           num_pieces=num_pieces, piece_length=piece_length)
+#     print heads_tails
+#     print build_bitfield(heads_tails, num_pieces)
 
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()
