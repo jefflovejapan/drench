@@ -84,46 +84,39 @@ def get_file_start(index=0, file_starts=[]):
 
 def get_interested(files=[], want_file_pos=[], file_starts=[],
                    piece_length=0, num_pieces=0):
+    print files, want_file_pos, file_starts, piece_length, num_pieces
     interested_bitfield = bitarray.bitarray()
     want_index = 0
     j = 0
-    pudb.set_trace()
     while j < num_pieces:
-        if want_index >= len(want_file_pos):
-            while len(interested_bitfield) < num_pieces:
-                interested_bitfield.append(0)
-            return interested_bitfield
         piece_start = j * piece_length
-        next_piece_start = piece_start + piece_length
-        file_start = file_starts[want_file_pos[want_index]]
-        next_file_start = (file_starts[want_file_pos[want_index]] +
-                           files[want_file_pos[want_index]]['length'])
+        piece_end = piece_start + piece_length
+        if want_index >= len(want_file_pos):
 
-        # If the piece starts and ends before the start of the current
-        # interesting file, we don't need it
-        if (piece_start < file_start and
-                next_piece_start < file_start):
+            # Hack. If our want index goes out of range it means
+            # we're not interested in anything else. But we still need to
+            # finish filling out the bitfield
+            file_start = num_pieces * piece_length + 1  # hack
+            file_end = file_start
 
-                interested_bitfield.append(0)
-                j += 1
+        else:
+            file_start = file_starts[want_file_pos[want_index]]
+            file_end = file_start + files[want_file_pos[want_index]]['length']
 
-        # If the piece starts after the end of the current interesting file,
-        # move to the next interesting file
-        elif piece_start >= next_file_start:
+        if piece_end < file_start:
+            interested_bitfield.append(0)
+            j += 1
+        elif piece_end > file_start and piece_end <= file_end:
+            interested_bitfield.append(1)
+            j += 1
+        elif piece_start >= file_start and piece_start < file_end:
+            interested_bitfield.append(1)
+            j += 1
+        elif piece_start >= file_end:
             want_index += 1
-
-        # If the piece starts after the start of the current interesting file,
-        # we need it
-        elif piece_start >= file_start:
-            interested_bitfield.append(1)
-            j += 1
-
-        # And if the piece ends before the end of the current interesting file,
-        # we need it
-        elif next_piece_start <= next_file_start:
-            interested_bitfield.append(1)
-            j += 1
-    # pudb.set_trace()
+        else:
+            raise Exception('You fucked up')
+    print interested_bitfield
     return interested_bitfield
 
 
@@ -133,7 +126,7 @@ class switchboard():
         self.file_list = file_list[:]
         self.piece_length = piece_length
         self.num_pieces = num_pieces
-        self.file_starts = get_file_starts(file_list)
+        self.file_starts = get_file_starts(self.file_list)
         self.want_file_pos = get_want_file_pos(self.file_list)
         self.outfiles = []
         self.index = 0
@@ -153,7 +146,6 @@ class switchboard():
                                                  piece_length=
                                                  self.piece_length,
                                                  file_starts=self.file_starts)
-        # file_list still OK after init. Who touches switchboard next?
 
     def seek(self, index):
         self.index = index
@@ -191,21 +183,29 @@ class switchboard():
 
 
 def main():
-    files = [{'length': 3}, {'length': 3}, {'length': 3}, {'length': 3}, {'length': 3}]
+    files = [{'length': 3}, {'length': 3}, {'length': 3}, {'length': 3},
+             {'length': 3}]
     want_file_pos = [1, 3]
-    file_starts = [0, 3, 6, 9, 12]
     piece_length = 4
-    print 'case 1', get_interested(files=files, want_file_pos=want_file_pos,
-                                   file_starts=file_starts,
-                                   piece_length=piece_length, num_pieces=4)
-    files = [{'length': 4}, {'length': 4}, {'length': 4}, {'length': 4}, {'length': 4}]
-    want_file_pos = [1]
-    file_starts = [0, 4, 8, 12, 16]
-    piece_length = 3
-    print 'case 2', get_interested(files=files, want_file_pos=want_file_pos,
-                                   file_starts=file_starts,
-                                   piece_length=piece_length, num_pieces=4)
+    file_length = 3
+    file_starts = [i * file_length for i in range(len(files))]
+    num_pieces = 4
+    print 'case 1'
+    print get_interested(want_file_pos=want_file_pos, file_starts=file_starts,
+                         num_pieces=num_pieces, piece_length=piece_length,
+                         files=files)
 
+    files = [{'length': 4}, {'length': 4}, {'length': 4}, {'length': 4},
+             {'length': 4}]
+    want_file_pos = [1]
+    piece_length = 3
+    file_length = 4
+    file_starts = [i * file_length for i in range(len(files))]
+    num_pieces = 4
+    print 'case 2'
+    print get_interested(want_file_pos=want_file_pos, file_starts=file_starts,
+                         num_pieces=num_pieces, piece_length=piece_length,
+                         files=files)
 
 if __name__ == '__main__':
     main()
