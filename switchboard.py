@@ -4,6 +4,7 @@ import bitarray
 from collections import namedtuple
 
 outfile = namedtuple('destination', 'fobj length')
+start_end_pair = namedtuple('start_end_pair', 'start end')
 
 
 def build_dirs(files):
@@ -82,42 +83,85 @@ def get_file_start(index=0, file_starts=[]):
             i += 1
 
 
-def get_interested(files=[], want_file_pos=[], file_starts=[],
-                   piece_length=0, num_pieces=0):
-    print files, want_file_pos, file_starts, piece_length, num_pieces
-    interested_bitfield = bitarray.bitarray()
-    want_index = 0
-    j = 0
-    while j < num_pieces:
-        piece_start = j * piece_length
-        piece_end = piece_start + piece_length
-        if want_index >= len(want_file_pos):
+def get_heads_tails(want_file_pos=[], file_starts=[], num_pieces=0,
+                    piece_length=0):
+    heads_tails = []
+    for i in want_file_pos:
+        head_tail = get_head_tail(want_index=i, file_starts=file_starts,
+                                  num_pieces=num_pieces,
+                                  piece_length=piece_length)
+        heads_tails.append(head_tail)
+    return heads_tails
 
-            # Hack. If our want index goes out of range it means
-            # we're not interested in anything else. But we still need to
-            # finish filling out the bitfield
-            file_start = num_pieces * piece_length + 1  # hack
-            file_end = file_start
 
-        else:
-            file_start = file_starts[want_file_pos[want_index]]
-            file_end = file_start + files[want_file_pos[want_index]]['length']
+def get_head_tail(want_index=0, file_starts=[], num_pieces=0,
+                  piece_length=0):
 
-        if piece_end < file_start:
-            interested_bitfield.append(0)
-            j += 1
-        elif piece_end > file_start and piece_end <= file_end:
-            interested_bitfield.append(1)
-            j += 1
-        elif piece_start >= file_start and piece_start < file_end:
-            interested_bitfield.append(1)
-            j += 1
-        elif piece_start >= file_end:
-            want_index += 1
-        else:
-            raise Exception('You fucked up')
-    print interested_bitfield
-    return interested_bitfield
+    # Find the byte value where the file starts
+    byte_start = file_starts[want_index]
+
+    # The firt piece we care about is at the point where the combined length
+    # is *just* less than or equal to byte_start
+    first_piece = byte_start // piece_length
+
+    # We want it in a separate variable so we can iterate
+    piece_pos = first_piece
+
+    # Find if we want the last file in the torrent
+    if want_index == len(file_starts) - 1:
+        last_piece = num_pieces - 1
+
+    # Otherwise we want a different piece
+    elif want_index < len(file_starts) - 1:
+        next_file_start = file_starts[want_index + 1]
+        while piece_pos * piece_length < next_file_start:
+            piece_pos += 1
+        last_piece = piece_pos - 1
+
+    # Or we blew it
+    else:
+        raise Exception('You blew it in get_head_tail')
+
+    return start_end_pair(start=first_piece, end=last_piece)
+
+
+# def get_interested(files=[], want_file_pos=[], file_starts=[],
+#                    piece_length=0, num_pieces=0):
+#     print files, want_file_pos, file_starts, piece_length, num_pieces
+#     interested_bitfield = bitarray.bitarray()
+#     want_index = 0
+#     j = 0
+#     while j < num_pieces:
+#         piece_start = j * piece_length
+#         piece_end = piece_start + piece_length
+#         if want_index >= len(want_file_pos):
+
+#             # Hack. If our want index goes out of range it means
+#             # we're not interested in anything else. But we still need to
+#             # finish filling out the bitfield
+#             file_start = num_pieces * piece_length + 1  # hack
+#             file_end = file_start
+
+#         else:
+#             file_start = file_starts[want_file_pos[want_index]]
+#             file_end = file_start + files[want_file_pos[want_index]]
+#                        ['length']
+
+#         if piece_end < file_start:
+#             interested_bitfield.append(0)
+#             j += 1
+#         elif piece_end > file_start and piece_end <= file_end:
+#             interested_bitfield.append(1)
+#             j += 1
+#         elif piece_start >= file_start and piece_start < file_end:
+#             interested_bitfield.append(1)
+#             j += 1
+#         elif piece_start >= file_end:
+#             want_index += 1
+#         else:
+#             raise Exception('You fucked up')
+#     print interested_bitfield
+#     return interested_bitfield
 
 
 class switchboard():
@@ -139,13 +183,7 @@ class switchboard():
                                          ['path']), 'w'),
                                length=self.file_list[i]['length'])
             self.outfiles.append(thisfile)
-        self.interested_indices = get_interested(files=self.file_list,
-                                                 want_file_pos=
-                                                 self.want_file_pos,
-                                                 num_pieces=self.num_pieces,
-                                                 piece_length=
-                                                 self.piece_length,
-                                                 file_starts=self.file_starts)
+        self.heads_and_tails = get_heads_tails
 
     def seek(self, index):
         self.index = index
@@ -183,6 +221,7 @@ class switchboard():
 
 
 def main():
+    pudb.set_trace()
     files = [{'length': 3}, {'length': 3}, {'length': 3}, {'length': 3},
              {'length': 3}]
     want_file_pos = [1, 3]
@@ -191,9 +230,8 @@ def main():
     file_starts = [i * file_length for i in range(len(files))]
     num_pieces = 4
     print 'case 1'
-    print get_interested(want_file_pos=want_file_pos, file_starts=file_starts,
-                         num_pieces=num_pieces, piece_length=piece_length,
-                         files=files)
+    print get_heads_tails(want_file_pos=want_file_pos, file_starts=file_starts,
+                          num_pieces=num_pieces, piece_length=piece_length)
 
     files = [{'length': 4}, {'length': 4}, {'length': 4}, {'length': 4},
              {'length': 4}]
@@ -203,9 +241,9 @@ def main():
     file_starts = [i * file_length for i in range(len(files))]
     num_pieces = 4
     print 'case 2'
-    print get_interested(want_file_pos=want_file_pos, file_starts=file_starts,
-                         num_pieces=num_pieces, piece_length=piece_length,
-                         files=files)
+    print get_heads_tails(want_file_pos=want_file_pos, file_starts=file_starts,
+                          num_pieces=num_pieces, piece_length=piece_length)
+
 
 if __name__ == '__main__':
     main()
