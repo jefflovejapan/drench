@@ -37,8 +37,11 @@ class torrent():
         else:
             self.multifile = False
         if self.multifile:
-            self.outfile = switchboard(self.torrent_dict['info']['name'],
-                                       self.torrent_dict['info']['files'])
+            self.outfile = switchboard(dirname=self.torrent_dict['info']
+                                       ['name'], file_list=self.torrent_dict
+                                       ['info']['files'], piece_length=
+                                       self.piece_length, num_pieces=
+                                       self.num_pieces)
         else:
             raise Exception('Whoa, wtf')
             outfile = open('{}'.format(self.torrent_dict['info']['name']), 'w')

@@ -228,7 +228,6 @@ class peer():
                             self.bitfield[i]):
 
                         self.valid_indices.append(i)
-            pudb.set_trace()
             print len(self.valid_indices), 'more pieces to go'
             if not self.valid_indices:
                 self.torrent.outfile.close()
