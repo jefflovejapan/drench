@@ -8,7 +8,7 @@ import time
 import os
 
 
-class peer():
+class peer(object):
     # Can't initialize without a dictionary. Handshake
     # takes place using socket before peer init
     def __init__(self, sock, reactor, torrent, data):
@@ -207,6 +207,7 @@ class peer():
     def pcancel(self):
         print 'pcancel'
 
+    # TODO -- revise_this, change method name
     def logic(self):
         '''
         Figures out what needs to be done next

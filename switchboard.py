@@ -121,22 +121,18 @@ def get_head_tail(want_index=0, file_starts=[], num_pieces=0,
         # We want the piece *before* the first one after the next file starts
         last_piece = piece_pos - 1
 
-    # Or we blew it
-    else:
-        raise Exception('You blew it in get_head_tail')
-
     return start_end_pair(start=first_piece, end=last_piece)
 
 
 def build_bitfield(heads_and_tails=[], num_pieces=0):
-    this_bitfield = bitarray.bitarray('0'*num_pieces)
+    this_bitfield = bitarray.bitarray('0' * num_pieces)
     for i in heads_and_tails:
         for j in range(i.start, i.end + 1):
             this_bitfield[j] = True
     return this_bitfield
 
 
-class switchboard():
+class switchboard(object):
     def __init__(self, dirname='', file_list=[], piece_length=0, num_pieces=0):
         self.dirname = dirname
         self.file_list = file_list[:]
@@ -154,8 +150,12 @@ class switchboard():
                                          ['path']), 'w'),
                                length=self.file_list[i]['length'])
             self.outfiles.append(thisfile)
-        heads_and_tails = get_heads_tails
-        self.bitfield = build_bitfield(heads_and_tails, num_pieces=num_pieces)
+        heads_and_tails = get_heads_tails(want_file_pos=self.want_file_pos,
+                                          file_starts=self.file_starts,
+                                          num_pieces=self.num_pieces,
+                                          piece_length=self.piece_length)
+        self.bitfield = build_bitfield(heads_and_tails,
+                                       num_pieces=self.num_pieces)
 
     def seek(self, index):
         self.index = index
@@ -192,33 +192,34 @@ class switchboard():
             i.fobj.close()
 
 
-# def main():
-#     files = [{'length': 3}, {'length': 3}, {'length': 3}, {'length': 3},
-#              {'length': 3}]
-#     want_file_pos = [1, 3]
-#     piece_length = 4
-#     file_length = 3
-#     file_starts = [i * file_length for i in range(len(files))]
-#     num_pieces = 4
-#     print 'case 1'
-#     heads_tails = get_heads_tails(want_file_pos=want_file_pos, file_starts=file_starts,
-#                           num_pieces=num_pieces, piece_length=piece_length)
-#     print heads_tails
-#     print build_bitfield(heads_tails, num_pieces)
+def test_heads_tails():
+    files = [{'length': 3}, {'length': 3}, {'length': 3}, {'length': 3},
+             {'length': 3}]
+    want_file_pos = [1, 3]
+    piece_length = 4
+    file_length = 3
+    file_starts = [i * file_length for i in range(len(files))]
+    num_pieces = 4
+    print 'case 1'
+    heads_tails = get_heads_tails(want_file_pos=want_file_pos,
+                                  file_starts=file_starts,
+                                  num_pieces=num_pieces,
+                                  piece_length=piece_length)
+    assert build_bitfield(heads_tails, num_pieces) == bitarray.bitarray('1110')
 
-#     files = [{'length': 4}, {'length': 4}, {'length': 4}, {'length': 4},
-#              {'length': 4}]
-#     want_file_pos = [1]
-#     piece_length = 3
-#     file_length = 4
-#     file_starts = [i * file_length for i in range(len(files))]
-#     num_pieces = 4
-#     print 'case 2'
-#     heads_tails = get_heads_tails(want_file_pos=want_file_pos, file_starts=file_starts,
-#                           num_pieces=num_pieces, piece_length=piece_length)
-#     print heads_tails
-#     print build_bitfield(heads_tails, num_pieces)
+    files = [{'length': 4}, {'length': 4}, {'length': 4}, {'length': 4},
+             {'length': 4}]
+    want_file_pos = [1]
+    piece_length = 3
+    file_length = 4
+    file_starts = [i * file_length for i in range(len(files))]
+    num_pieces = 4
+    heads_tails = get_heads_tails(want_file_pos=want_file_pos,
+                                  file_starts=file_starts,
+                                  num_pieces=num_pieces,
+                                  piece_length=piece_length)
+    assert build_bitfield(heads_tails, num_pieces) == bitarray.bitarray('0110')
 
 
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    test_heads_tails()

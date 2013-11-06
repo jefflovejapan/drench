@@ -6,12 +6,10 @@ import argparse
 import pudb
 import reactor
 import peer
-import urllib
 from switchboard import switchboard
-from bitarray import bitarray
 
 
-class torrent():
+class torrent(object):
 
     def __init__(self, torrent_path, port=55308):
         torrent_dict = tparser.bdecode(torrent_path)
@@ -25,26 +23,11 @@ class torrent():
         self.hash_string = None
         self.queued_requests = []
         self.reactor = reactor.Reactor()
-        self.multifile = 'files' in self.torrent_dict['info']
-        
-        # If it's multifile, outfile is a switchboard
-        if self.multifile:
-            self.outfile = switchboard(dirname=self.torrent_dict['info']
-                                       ['name'], file_list=self.torrent_dict
-                                       ['info']['files'], piece_length=
-                                       self.piece_length, num_pieces=
-                                       self.num_pieces)
-        else:
-            # Outfile is a file object
-            self.outfile = open('{}'.format(self.torrent_dict['info']['name']), 'w')
-        mybytes = divmod(len(self.torrent_dict['info']['pieces']), 20)
-        if mybytes[1] == 0:
-            self.bitfield = bitarray(len(self.torrent_dict['info']
-                                     ['pieces'])//20)
-            pudb.set_trace()
-        else:
-            raise ValueError('Torrent file has bad hash')
-        self.bitfield.setall(False)
+        self.outfile = switchboard(dirname=self.torrent_dict['info']
+                                   ['name'], file_list=self.torrent_dict
+                                   ['info']['files'], piece_length=
+                                   self.piece_length, num_pieces=
+                                   self.num_pieces)
 
     @property
     def piece_length(self):
@@ -52,14 +35,15 @@ class torrent():
 
     @property
     def num_pieces(self):
-        return len(self.bitfield)
+        num, rem = divmod(len(self.torrent_dict['info']['pieces']), 20)
+        if rem == 0:
+            return num
+        else:
+            raise Exception("Improperly formed 'pieces' entry in torrent_dict")
 
     @property
     def length(self):
-        if not self.multifile:
-            return self.torrent_dict['info']['length']
-        else:
-            return sum([i.length for i in self.outfile.outfiles])
+        return sum([i.length for i in self.outfile.outfiles])
 
     @property
     def last_piece_length(self):
