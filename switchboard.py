@@ -8,6 +8,10 @@ start_end_pair = namedtuple('start_end_pair', 'start end')
 
 
 def build_dirs(files):
+    '''
+    Build necessary directories based on a list of file paths
+    '''
+
     for i in files:
         if len(i['path']) > 1:
             addpath = os.path.join(*i['path'][:-1])
@@ -17,6 +21,10 @@ def build_dirs(files):
 
 
 def get_want_file_pos(file_list):
+    '''
+    Ask the user which files in file_list he or she is interested in.
+    Return indices for the files inside file_list
+    '''
     want_file_pos = []
     print '\nFiles contained:\n'
     for i in file_list:
@@ -47,6 +55,10 @@ def get_want_file_pos(file_list):
 
 
 def get_file_starts(file_list):
+    '''
+    Return the starting position (in bytes) of a list of files by
+    iteratively summing their lengths
+    '''
     starts = []
     total = 0
     for i in file_list:
@@ -56,11 +68,16 @@ def get_file_starts(file_list):
     return starts
 
 
-def get_write_file(index=0, file_starts=[0], files=[], outfiles=[]):
+def get_write_file(byte_index=0, file_starts=[0], files=[], outfiles=[]):
+    '''
+    Retrieve the actual file that the current block of data should be
+    written to.
+    '''
     i = 1
+    pudb.set_trace()
     while i <= len(file_starts) + 1:
         start = file_starts[-i]
-        if start <= index:
+        if start <= byte_index:
             tfile = files[-i]
             break
         else:
@@ -75,10 +92,15 @@ def get_write_file(index=0, file_starts=[0], files=[], outfiles=[]):
         raise Exception("Shit isn't matching")
 
 
-def get_file_start(index=0, file_starts=[]):
+def get_file_start(byte_index=0, file_starts=[]):
+    '''
+    Find the starting position of the earliest file that I want to write to
+    '''
+    # Seems like I should be counting forward through these. Find the first
+    # file whose starting position is <= index?
     i = 1
     while i <= len(file_starts) + 1:
-        if index >= file_starts[-i]:
+        if byte_index >= file_starts[-i]:
             return file_starts[-i]
         else:
             i += 1
@@ -158,12 +180,22 @@ class switchboard(object):
                                        num_pieces=self.num_pieces)
 
     def seek(self, index):
+        '''
+        Set how far to advance (bytewise) in file list
+        '''
         self.index = index
 
     def write(self, block):
         while block:
-            file_start = get_file_start(index=self.index,
+
+            # file_start is the byte offset of the rightmost file whose
+            # offset is less than index. It's the offset of the file that
+            # the block starting at index should begin writing to.
+            file_start = get_file_start(byte_index=self.index,
                                         file_starts=self.file_starts)
+
+            # write_file is the actual file that we ought to be writing to.
+            # It's... I dunno
             write_file = get_write_file(index=self.index,
                                         files=self.file_list,
                                         file_starts=self.file_starts,
@@ -187,6 +219,16 @@ class switchboard(object):
                     block = block[next_start-file_end:]
                 else:
                     block = None
+
+    def mark_off(self, index):
+        self.bitfield[index] = False
+
+    @property
+    def complete(self):
+        if any(self.bitfield):
+            return True
+        else:
+            return False
 
     def close(self):
         for i in self.outfiles:
