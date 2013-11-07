@@ -4,8 +4,6 @@ import pudb
 import random
 import socket
 import hashlib
-import time
-import os
 
 
 class peer(object):
@@ -172,15 +170,13 @@ class peer(object):
     def phave(self):
         index = struct.unpack('>i', self.save_state['message'])[0]
         self.bitfield[index] = True
-        print repr(self.bitfield)
 
     def pbitfield(self):
         self.bitfield = bitarray()
         self.bitfield.frombytes(self.save_state['message'])
-        print "this is the peer's bitfield", self.bitfield
         self.interested()
         self.unchoke()
-        self.reactor.subscribed['logic'].append(self.logic)
+        self.reactor.subscribed['logic'].append(self.determine_next_request)
 
     def prequest(self):
         print 'prequest'
@@ -202,48 +198,41 @@ class peer(object):
         # TODO -- add check for hash equality
         self.torrent.bitfield[index] = True
         # print 'My bitfield:', self.torrent.bitfield
-        self.reactor.subscribed['logic'].append(self.logic)
+        self.reactor.subscribed['logic'].append(self.determine_next_request)
 
     def pcancel(self):
         print 'pcancel'
 
     # TODO -- revise_this, change method name
-    def logic(self):
+    def determine_next_request(self):
         '''
         Figures out what needs to be done next
         '''
-        print 'inside logic'
-        # TODO -- Why do I need this check? Why would a responsive socket
-        # not send me a bitfield?
-        if self.bitfield:
-            self.valid_indices = []
+        assert self.bitfield
+        self.valid_indices = []
 
-            for i in range(len(self.torrent.bitfield)):
-                if not self.torrent.multifile:
-                    if (self.torrent.bitfield[i] is False
-                            and self.bitfield[i] is True):
-                        self.valid_indices.append(i)
-                else:
-                    if (self.torrent.outfile.interested_indices[i] and
-                        not self.torrent.bitfield[i] and
-                            self.bitfield[i]):
+        # We want a list of all indices where:
+        #   - We're interested in the piece (it's in torrent.outfile.bitfield)
+        #   - The peer has the piece (it's available)
+        for i in range(self.torrent.num_pieces):
+            if (self.torrent.outfile.bitfield[i] is True
+                    and self.bitfield[i] is True):
+                self.valid_indices.append(i)
 
-                        self.valid_indices.append(i)
-            print len(self.valid_indices), 'more pieces to go'
-            if not self.valid_indices:
-                self.torrent.outfile.close()
-                os.system(' '.join(('open', self.torrent.outfile.name)))
-                return
-            while 1:
-                next_request = random.choice(self.valid_indices)
-                if next_request not in self.torrent.queued_requests:
-                    print 'Setting next_request = {}'.format(next_request)
-                    self.torrent.queued_requests.append(next_request)
-                    self.next_request = next_request
-                    print ('Self.next_request is', self.next_request, 'from',
-                           self.fileno())
-                    self.reactor.subscribed['write'].append(self.request)
-                    break
+        print len(self.valid_indices), 'more pieces to go'
+        if not self.valid_indices:
+            self.torrent.outfile.close()
+            return
+        while 1:
+            next_request = random.choice(self.valid_indices)
+            if next_request not in self.torrent.queued_requests:
+                print 'Setting next_request = {}'.format(next_request)
+                self.torrent.queued_requests.append(next_request)
+                self.next_request = next_request
+                print ('Self.next_request is', self.next_request, 'from',
+                       self.fileno())
+                self.reactor.subscribed['write'].append(self.request)
+                break
 
     def interested(self):
         packet = ''.join(struct.pack('!ib', 1, 2))

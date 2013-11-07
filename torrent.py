@@ -43,7 +43,7 @@ class torrent(object):
 
     @property
     def length(self):
-        return sum([i.length for i in self.outfile.outfiles])
+        return sum([i['length'] for i in self.torrent_dict['info']['files']])
 
     @property
     def last_piece_length(self):

@@ -1,9 +1,9 @@
 import os
 import pudb
 import bitarray
+import copy
 from collections import namedtuple
 
-outfile = namedtuple('outfile', 'fobj length')
 start_end_pair = namedtuple('start_end_pair', 'start end')
 
 
@@ -67,7 +67,7 @@ def get_write_file(index=0, file_starts=[0], files=[], outfiles=[]):
             i += 1
     j = 1
     while j <= len(outfiles) + 1:
-        if outfiles[-j].fobj.name == os.path.join(*tfile['path']):
+        if outfiles[-j].name == os.path.join(*tfile['path']):
             return outfiles[-j]
         else:
             j += 1
@@ -135,7 +135,7 @@ def build_bitfield(heads_and_tails=[], num_pieces=0):
 class switchboard(object):
     def __init__(self, dirname='', file_list=[], piece_length=0, num_pieces=0):
         self.dirname = dirname
-        self.file_list = file_list[:]
+        self.file_list = copy.deepcopy(file_list)
         self.piece_length = piece_length
         self.num_pieces = num_pieces
         self.file_starts = get_file_starts(self.file_list)
@@ -144,11 +144,11 @@ class switchboard(object):
         self.index = 0
         os.mkdir(self.dirname)
         os.chdir(os.path.join(os.getcwd(), self.dirname))
-        build_dirs(self.file_list[index] for index in self.want_file_pos)
+        want_files = [self.file_list[index] for index in self.want_file_pos]
+        build_dirs(want_files)
         for i in self.want_file_pos:
-            thisfile = outfile(fobj=open(os.path.join(*self.file_list[i]
-                                         ['path']), 'w'),
-                               length=self.file_list[i]['length'])
+            thisfile = open(os.path.join(*self.file_list[i]
+                                         ['path']), 'w')
             self.outfiles.append(thisfile)
         heads_and_tails = get_heads_tails(want_file_pos=self.want_file_pos,
                                           file_starts=self.file_starts,
@@ -168,6 +168,7 @@ class switchboard(object):
                                         files=self.file_list,
                                         file_starts=self.file_starts,
                                         outfiles=self.outfiles)
+
             file_index = self.index - file_start
             write_file.seek(file_index)
             file_end = (self.file_starts
@@ -189,37 +190,37 @@ class switchboard(object):
 
     def close(self):
         for i in self.outfiles:
-            i.fobj.close()
+            i.close()
 
 
-def test_heads_tails():
-    files = [{'length': 3}, {'length': 3}, {'length': 3}, {'length': 3},
-             {'length': 3}]
-    want_file_pos = [1, 3]
-    piece_length = 4
-    file_length = 3
-    file_starts = [i * file_length for i in range(len(files))]
-    num_pieces = 4
-    print 'case 1'
-    heads_tails = get_heads_tails(want_file_pos=want_file_pos,
-                                  file_starts=file_starts,
-                                  num_pieces=num_pieces,
-                                  piece_length=piece_length)
-    assert build_bitfield(heads_tails, num_pieces) == bitarray.bitarray('1110')
+# def test_heads_tails():
+#     files = [{'length': 3}, {'length': 3}, {'length': 3}, {'length': 3},
+#              {'length': 3}]
+#     want_file_pos = [1, 3]
+#     piece_length = 4
+#     file_length = 3
+#     file_starts = [i * file_length for i in range(len(files))]
+#     num_pieces = 4
+#     print 'case 1'
+#     heads_tails = get_heads_tails(want_file_pos=want_file_pos,
+#                                   file_starts=file_starts,
+#                                   num_pieces=num_pieces,
+#                                   piece_length=piece_length)
+#     assert build_bitfield(heads_tails, num_pieces) == bitarray.bitarray('1110')
 
-    files = [{'length': 4}, {'length': 4}, {'length': 4}, {'length': 4},
-             {'length': 4}]
-    want_file_pos = [1]
-    piece_length = 3
-    file_length = 4
-    file_starts = [i * file_length for i in range(len(files))]
-    num_pieces = 4
-    heads_tails = get_heads_tails(want_file_pos=want_file_pos,
-                                  file_starts=file_starts,
-                                  num_pieces=num_pieces,
-                                  piece_length=piece_length)
-    assert build_bitfield(heads_tails, num_pieces) == bitarray.bitarray('0110')
+#     files = [{'length': 4}, {'length': 4}, {'length': 4}, {'length': 4},
+#              {'length': 4}]
+#     want_file_pos = [1]
+#     piece_length = 3
+#     file_length = 4
+#     file_starts = [i * file_length for i in range(len(files))]
+#     num_pieces = 4
+#     heads_tails = get_heads_tails(want_file_pos=want_file_pos,
+#                                   file_starts=file_starts,
+#                                   num_pieces=num_pieces,
+#                                   piece_length=piece_length)
+#     assert build_bitfield(heads_tails, num_pieces) == bitarray.bitarray('0110')
 
 
-if __name__ == '__main__':
-    test_heads_tails()
+# if __name__ == '__main__':
+#     test_heads_tails()
