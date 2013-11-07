@@ -74,7 +74,6 @@ def get_write_file(byte_index=0, file_starts=[0], files=[], outfiles=[]):
     written to.
     '''
     i = 1
-    pudb.set_trace()
     while i <= len(file_starts) + 1:
         start = file_starts[-i]
         if start <= byte_index:
@@ -163,7 +162,7 @@ class switchboard(object):
         self.file_starts = get_file_starts(self.file_list)
         self.want_file_pos = get_want_file_pos(self.file_list)
         self.outfiles = []
-        self.index = 0
+        self.byte_index = 0
         os.mkdir(self.dirname)
         os.chdir(os.path.join(os.getcwd(), self.dirname))
         want_files = [self.file_list[index] for index in self.want_file_pos]
@@ -183,7 +182,7 @@ class switchboard(object):
         '''
         Set how far to advance (bytewise) in file list
         '''
-        self.index = index
+        self.byte_index = index
 
     def write(self, block):
         while block:
@@ -191,20 +190,20 @@ class switchboard(object):
             # file_start is the byte offset of the rightmost file whose
             # offset is less than index. It's the offset of the file that
             # the block starting at index should begin writing to.
-            file_start = get_file_start(byte_index=self.index,
+            file_start = get_file_start(byte_index=self.byte_index,
                                         file_starts=self.file_starts)
 
             # write_file is the actual file that we ought to be writing to.
             # It's... I dunno
-            write_file = get_write_file(index=self.index,
+            write_file = get_write_file(byte_index=self.byte_index,
                                         files=self.file_list,
                                         file_starts=self.file_starts,
                                         outfiles=self.outfiles)
 
-            file_index = self.index - file_start
+            file_index = self.byte_index - file_start
             write_file.seek(file_index)
             file_end = (self.file_starts
-                        [self.file_starts.index(file_start) + 1] - 1)
+                        [self.file_starts.index(file_start) + 1])
 
             bytes_writable = file_end - file_index
             if bytes_writable < len(block):
@@ -213,12 +212,15 @@ class switchboard(object):
                 # This will take us to the next index value in file_starts
                 next_index = self.outfiles.index(write_file) + 1
                 next_start = self.file_starts[next_index]
-                self.index = next_start
+                self.byte_index = next_start
                 # Moving ahead by the difference
                 if block[next_start-file_end]:
                     block = block[next_start-file_end:]
                 else:
                     block = None
+            else:
+                write_file.write(block)
+                block = None
 
     def mark_off(self, index):
         self.bitfield[index] = False

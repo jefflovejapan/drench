@@ -89,7 +89,6 @@ class peer(object):
         return instr[1:]
 
     def get_message(self, instr):
-
         # Since one byte is getting used up for the message_id
         length_after_id = self.save_state['length'] - 1
         if length_after_id == 0:
@@ -182,21 +181,34 @@ class peer(object):
         print 'prequest'
 
     def ppiece(self, content):
-        index, begin = struct.unpack('!ii', content[0:8])
+        '''
+        Process a piece that we've received from a peer, writing it out to
+        one or more files
+        '''
+        piece_index, block_begin = struct.unpack('!ii', content[0:8])
         block = content[8:]
         if hashlib.sha1(block).digest() == (self.torrent.torrent_dict['info']
-                                            ['pieces'][20*index:20*index+20]):
+                                            ['pieces']
+                                            [20 * piece_index:20 * piece_index
+                                             + 20]):
             print 'hash matches'
             print ('writing piece {}. Length is '
                    '{}').format(repr(block)[:10] + '...', len(block))
-            self.torrent.outfile.seek(index*self.torrent.piece_length)
+
+            # Tell outfile how far to advance in the overall byte order
+            self.torrent.outfile.seek(piece_index * self.torrent.piece_length)
             self.torrent.outfile.write(block)
+            self.torrent.outfile.mark_off(piece_index)
+            print self.torrent.outfile.bitfield
+            if self.torrent.outfile.complete:
+                print 'bitfield full'
+                self.torrent.outfile.close()
         else:
             raise Exception("hash of piece doesn't"
                             "match hash in torrent_dict")
 
         # TODO -- add check for hash equality
-        self.torrent.bitfield[index] = True
+        self.torrent.outfile.bitfield[piece_index] = True
         # print 'My bitfield:', self.torrent.bitfield
         self.reactor.subscribed['logic'].append(self.determine_next_request)
 
@@ -221,8 +233,7 @@ class peer(object):
 
         print len(self.valid_indices), 'more pieces to go'
         if not self.valid_indices:
-            self.torrent.outfile.close()
-            return
+            pass
         while 1:
             next_request = random.choice(self.valid_indices)
             if next_request not in self.torrent.queued_requests:
