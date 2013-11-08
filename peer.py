@@ -208,8 +208,6 @@ class peer(object):
                             "match hash in torrent_dict")
 
         # TODO -- add check for hash equality
-        self.torrent.outfile.bitfield[piece_index] = True
-        # print 'My bitfield:', self.torrent.bitfield
         self.reactor.subscribed['logic'].append(self.determine_next_request)
 
     def pcancel(self):
@@ -233,7 +231,7 @@ class peer(object):
 
         print len(self.valid_indices), 'more pieces to go'
         if not self.valid_indices:
-            pass
+            return
         while 1:
             next_request = random.choice(self.valid_indices)
             if next_request not in self.torrent.queued_requests:

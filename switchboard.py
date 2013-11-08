@@ -74,20 +74,23 @@ def get_write_file(byte_index=0, file_starts=[0], files=[], outfiles=[]):
     written to.
     '''
     i = 1
-    while i <= len(file_starts) + 1:
+    while i <= len(file_starts):
         start = file_starts[-i]
         if start <= byte_index:
             tfile = files[-i]
             break
         else:
             i += 1
+    if not tfile:
+        pudb.set_trace()
     j = 1
-    while j <= len(outfiles) + 1:
+    while j <= len(outfiles):
         if outfiles[-j].name == os.path.join(*tfile['path']):
             return outfiles[-j]
         else:
             j += 1
     else:
+        # pudb.set_trace()
         raise Exception("Shit isn't matching")
 
 
@@ -185,42 +188,61 @@ class switchboard(object):
         self.byte_index = index
 
     def write(self, block):
-        while block:
 
-            # file_start is the byte offset of the rightmost file whose
-            # offset is less than index. It's the offset of the file that
-            # the block starting at index should begin writing to.
-            file_start = get_file_start(byte_index=self.byte_index,
-                                        file_starts=self.file_starts)
+        # file_start is the byte offset of the rightmost file whose
+        # offset is less than index. It's the offset of the file that
+        # the block starting at byte_index should begin writing to.
+        file_start = get_file_start(byte_index=self.byte_index,
+                                    file_starts=self.file_starts)
 
-            # write_file is the actual file that we ought to be writing to.
-            # It's... I dunno
-            write_file = get_write_file(byte_index=self.byte_index,
-                                        files=self.file_list,
-                                        file_starts=self.file_starts,
-                                        outfiles=self.outfiles)
+        # write_file is the actual file that we ought to be writing to.
+        write_file = get_write_file(byte_index=self.byte_index,
+                                    files=self.file_list,
+                                    file_starts=self.file_starts,
+                                    outfiles=self.outfiles)
 
-            file_index = self.byte_index - file_start
-            write_file.seek(file_index)
-            file_end = (self.file_starts
-                        [self.file_starts.index(file_start) + 1])
+        file_internal_index = self.byte_index - file_start
+        write_file.seek(file_internal_index)
+        file_end = (self.file_starts
+                    [self.file_starts.index(file_start) + 1])
 
-            bytes_writable = file_end - file_index
-            if bytes_writable < len(block):
-                write_file.write(block[:bytes_writable])
+        bytes_writable = file_end - file_internal_index
+        if bytes_writable < len(block):
+            # pudb.set_trace()
+            write_file.write(block[:bytes_writable])
+            block = block[bytes_writable:]
 
-                # This will take us to the next index value in file_starts
-                next_index = self.outfiles.index(write_file) + 1
-                next_start = self.file_starts[next_index]
-                self.byte_index = next_start
-                # Moving ahead by the difference
-                if block[next_start-file_end]:
-                    block = block[next_start-file_end:]
-                else:
-                    block = None
+            # The next index in the entire torrent
+            j = self.file_starts.index(file_start) + 1
+
+            # If we still want a higher index
+            if j < self.want_file_pos[-1]:
+
+                # Index of current file among all files in torrent
+                current_file_index = self.file_starts.index(file_start)
+
+                # Index of that index inside want_file_pos
+                inner_want_index = self.want_file_pos.index(current_file_index)
+
+                # The index of the next file we want among all files in torent
+                next_file_index = self.want_file_pos[inner_want_index + 1]
+
+                # The starting byte value of that file
+                self.byte_index = self.file_starts[next_file_index]
+
+                # If there's enough block to make it there
+                if len(block) > self.byte_index - file_start:
+                    block = block[self.byte_index - file_start]
+
+                    # Start writing again
+                    self.write(block)
+
             else:
-                write_file.write(block)
-                block = None
+                return
+
+        else:
+            write_file.write(block)
+            block = None
 
     def mark_off(self, index):
         self.bitfield[index] = False
@@ -228,9 +250,9 @@ class switchboard(object):
     @property
     def complete(self):
         if any(self.bitfield):
-            return True
-        else:
             return False
+        else:
+            return True
 
     def close(self):
         for i in self.outfiles:
