@@ -68,30 +68,38 @@ def get_file_starts(file_list):
     return starts
 
 
-def get_write_file(byte_index=0, file_starts=[0], files=[], outfiles=[]):
+def get_rightmost_file(byte_index=0, file_starts=[0], files=[]):
+
     '''
-    Retrieve the actual file that the current block of data should be
-    written to.
+    Retrieve the highest-indexed file that starts at or before byte_index.
     '''
     i = 1
     while i <= len(file_starts):
         start = file_starts[-i]
         if start <= byte_index:
-            tfile = files[-i]
-            break
+            return files[-i]
         else:
             i += 1
-    if not tfile:
-        pudb.set_trace()
-    j = 1
-    while j <= len(outfiles):
-        if outfiles[-j].name == os.path.join(*tfile['path']):
-            return outfiles[-j]
-        else:
-            j += 1
     else:
-        # pudb.set_trace()
-        raise Exception("Shit isn't matching")
+        raise Exception('byte_index lower than all file_starts')
+
+
+def get_next_want_file(byte_index=0, want_file_pos=[],
+                       file_starts=[0], files=[], block=''):
+    while block:
+        rightmost = get_rightmost_file(byte_index=byte_index,
+                                       file_starts=file_starts,
+                                       files=files)
+        if files.index(rightmost) in want_file_pos:
+            return os.path.join(*rightmost['path'])
+        else:
+            byte_index = byte_index + rightmost['length']
+            if len(block) > rightmost['length']:
+                block = block[rightmost['length']:]
+            else:
+                block = ''
+    else:
+        return None
 
 
 def get_file_start(byte_index=0, file_starts=[]):
@@ -188,18 +196,32 @@ class switchboard(object):
         self.byte_index = index
 
     def write(self, block):
-
         # file_start is the byte offset of the rightmost file whose
         # offset is less than index. It's the offset of the file that
         # the block starting at byte_index should begin writing to.
         file_start = get_file_start(byte_index=self.byte_index,
                                     file_starts=self.file_starts)
 
-        # write_file is the actual file that we ought to be writing to.
-        write_file = get_write_file(byte_index=self.byte_index,
-                                    files=self.file_list,
-                                    file_starts=self.file_starts,
-                                    outfiles=self.outfiles)
+        # write_path is the file path that we ought to be writing to.
+        write_path = get_next_want_file(byte_index=self.byte_index,
+                                        files=self.file_list,
+                                        file_starts=self.file_starts,
+                                        block=block,
+                                        want_file_pos=self.want_file_pos)
+
+        if not write_path:
+            return
+
+        i = 0
+        while i < len(self.outfiles):
+            if self.outfiles[i].name == write_path:
+                write_file = self.outfiles[i]
+                break
+            else:
+                i += 1
+        else:
+            pudb.set_trace()
+            raise Exception('Nothing matches')
 
         file_internal_index = self.byte_index - file_start
         write_file.seek(file_internal_index)
@@ -208,7 +230,6 @@ class switchboard(object):
 
         bytes_writable = file_end - file_internal_index
         if bytes_writable < len(block):
-            # pudb.set_trace()
             write_file.write(block[:bytes_writable])
             block = block[bytes_writable:]
 
@@ -259,34 +280,91 @@ class switchboard(object):
             i.close()
 
 
-# def test_heads_tails():
-#     files = [{'length': 3}, {'length': 3}, {'length': 3}, {'length': 3},
-#              {'length': 3}]
-#     want_file_pos = [1, 3]
-#     piece_length = 4
-#     file_length = 3
-#     file_starts = [i * file_length for i in range(len(files))]
-#     num_pieces = 4
-#     print 'case 1'
-#     heads_tails = get_heads_tails(want_file_pos=want_file_pos,
-#                                   file_starts=file_starts,
-#                                   num_pieces=num_pieces,
-#                                   piece_length=piece_length)
-#     assert build_bitfield(heads_tails, num_pieces) == bitarray.bitarray('1110')
+# def test_get_write_file():
+#     file_starts = [0, 483023, 944949, 4157426, 18877975, 36667180, 51499115,
+#                    70003240, 84992746, 93577236, 109611431, 127573045,
+#                    139208428, 151130741, 166870702, 180550961, 188662949,
+#                    197822552, 214302710, 225269360, 236530253, 242925892,
+#                    254454279, 265898029, 273484016, 273485312]
 
-#     files = [{'length': 4}, {'length': 4}, {'length': 4}, {'length': 4},
-#              {'length': 4}]
-#     want_file_pos = [1]
-#     piece_length = 3
-#     file_length = 4
-#     file_starts = [i * file_length for i in range(len(files))]
-#     num_pieces = 4
-#     heads_tails = get_heads_tails(want_file_pos=want_file_pos,
-#                                   file_starts=file_starts,
-#                                   num_pieces=num_pieces,
-#                                   piece_length=piece_length)
-#     assert build_bitfield(heads_tails, num_pieces) == bitarray.bitarray('0110')
+#     files = [{'path': ['Content', '174-h.htm'], 'length': 483023},
+#              {'path': ['Content', '174.txt'], 'length': 461926},
+#              {'path': ['Content', 'pictureofdoriangray_00_wilde_64kb.mp3'], 'length': 3212477},
+#              {'path': ['Content', 'pictureofdoriangray_01_wilde_64kb.mp3'], 'length': 14720549},
+#              {'path': ['Content', 'pictureofdoriangray_02_wilde_64kb.mp3'], 'length': 17789205},
+#              {'path': ['Content', 'pictureofdoriangray_03_wilde_64kb.mp3'], 'length': 14831935},
+#              {'path': ['Content', 'pictureofdoriangray_04_wilde_64kb.mp3'], 'length': 18504125},
+#              {'path': ['Content', 'pictureofdoriangray_05_wilde_64kb.mp3'], 'length': 14989506},
+#              {'path': ['Content', 'pictureofdoriangray_06_wilde_64kb.mp3'], 'length': 8584490},
+#              {'path': ['Content', 'pictureofdoriangray_07_wilde_64kb.mp3'], 'length': 16034195},
+#              {'path': ['Content', 'pictureofdoriangray_08_wilde_64kb.mp3'], 'length': 17961614}, 
+#              {'path': ['Content', 'pictureofdoriangray_09_wilde_64kb.mp3'], 'length': 11635383}, 
+#              {'path': ['Content', 'pictureofdoriangray_10_wilde_64kb.mp3'], 'length': 11922313}, 
+#              {'path': ['Content', 'pictureofdoriangray_11a_wilde_64kb.mp3'], 'length': 15739961}, 
+#              {'path': ['Content', 'pictureofdoriangray_11b_wilde_64kb.mp3'], 'length': 13680259}, 
+#              {'path': ['Content', 'pictureofdoriangray_12_wilde_64kb.mp3'], 'length': 8111988}, 
+#              {'path': ['Content', 'pictureofdoriangray_13_wilde_64kb.mp3'], 'length': 9159603}, 
+#              {'path': ['Content', 'pictureofdoriangray_14_wilde_64kb.mp3'], 'length': 16480158}, 
+#              {'path': ['Content', 'pictureofdoriangray_15_wilde_64kb.mp3'], 'length': 10966650}, 
+#              {'path': ['Content', 'pictureofdoriangray_16_wilde_64kb.mp3'], 'length': 11260893}, 
+#              {'path': ['Content', 'pictureofdoriangray_17_wilde_64kb.mp3'], 'length': 6395639}, 
+#              {'path': ['Content', 'pictureofdoriangray_18_wilde_64kb.mp3'], 'length': 11528387}, 
+#              {'path': ['Content', 'pictureofdoriangray_19_wilde_64kb.mp3'], 'length': 11443750}, 
+#              {'path': ['Content', 'pictureofdoriangray_20_wilde_64kb.mp3'], 'length': 7585987}, 
+#              {'path': ['Description.txt'], 'length': 1296}, 
+#              {'path': ['License.txt'], 'length': 51}]
+
+#     pudb.set_trace()
+#     piece_length = 131072
+#     want_files = [0,2]
+
+#     for j in range(32):
+#         # Want to find the rightmost file that begins at or before byte_index
+#         write_file = get_next_want_file(byte_index=j*piece_length,
+#                                         file_starts=file_starts,
+#                                         files=files,
+#                                         want_file_pos=want_files,
+#                                         block='0'*piece_length)
+
+#         print('piece {} starts at byte {} '
+#               'and maps to {}'.format(j, j * piece_length, write_file))
+
+
+# All the pieces for the first three files:
+#
+# piece 0 starts at byte 0 and maps to somefile(name='Content/174-h.htm')
+# piece 1 starts at byte 131072 and maps to somefile(name='Content/174-h.htm')
+# piece 2 starts at byte 262144 and maps to somefile(name='Content/174-h.htm')
+# piece 3 starts at byte 393216 and maps to somefile(name='Content/174-h.htm')
+# piece 4 starts at byte 524288 and maps to somefile(name='Content/174.txt')
+# piece 5 starts at byte 655360 and maps to somefile(name='Content/174.txt')
+# piece 6 starts at byte 786432 and maps to somefile(name='Content/174.txt')
+# piece 7 starts at byte 917504 and maps to somefile(name='Content/174.txt')
+# piece 8 starts at byte 1048576 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 9 starts at byte 1179648 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 10 starts at byte 1310720 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 11 starts at byte 1441792 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 12 starts at byte 1572864 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 13 starts at byte 1703936 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 14 starts at byte 1835008 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 15 starts at byte 1966080 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 16 starts at byte 2097152 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 17 starts at byte 2228224 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 18 starts at byte 2359296 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 19 starts at byte 2490368 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 20 starts at byte 2621440 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 21 starts at byte 2752512 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 22 starts at byte 2883584 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 23 starts at byte 3014656 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 24 starts at byte 3145728 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 25 starts at byte 3276800 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 26 starts at byte 3407872 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 27 starts at byte 3538944 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 28 starts at byte 3670016 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 29 starts at byte 3801088 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 30 starts at byte 3932160 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
+# piece 31 starts at byte 4063232 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
 
 
 # if __name__ == '__main__':
-#     test_heads_tails()
+#     test_get_write_file()
