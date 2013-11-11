@@ -212,7 +212,7 @@ class switchboard(object):
         if not write_file:
             return
 
-        # Retrieve the file object whose name is write_path
+        # Retrieve the file object whose name is described by write_file
         i = 0
         while i < len(self.outfiles):
             if self.outfiles[i].name == os.path.join(*write_file['path']):
@@ -228,22 +228,27 @@ class switchboard(object):
         write_obj.seek(file_internal_index)
 
         file_length = write_file['length']
+
+        # How far till the end?
         bytes_writable = file_length - file_internal_index
+
+        # If we can't write the entire block
         if bytes_writable < len(self.block):
             write_obj.write(self.block[:bytes_writable])
             self.block = self.block[bytes_writable:]
             self.byte_index = self.byte_index + bytes_writable
 
-            # The next index in the entire torrent
+            # Find the would-be next highest index (we could be on last file)
             j = self.file_starts.index(file_start) + 1
 
-            # If we still want a higher index
+            # If we're not at the end, keep trying to write
             if j <= self.want_file_pos[-1]:
                 self.write()
 
             else:
                 return
 
+        # If we can write the entire block
         else:
             write_obj.write(self.block)
             self.block = ''
@@ -261,54 +266,3 @@ class switchboard(object):
     def close(self):
         for i in self.outfiles:
             i.close()
-
-
-# def test_get_write_file():
-#     file_starts = [0, 483023, 944949, 4157426, 18877975, 36667180, 51499115,
-#                    70003240, 84992746, 93577236, 109611431, 127573045,
-#                    139208428, 151130741, 166870702, 180550961, 188662949,
-#                    197822552, 214302710, 225269360, 236530253, 242925892,
-#                    254454279, 265898029, 273484016, 273485312]
-
-#     files = [{'path': ['Content', '174-h.htm'], 'length': 483023},
-#              {'path': ['Content', '174.txt'], 'length': 461926},
-#              {'path': ['Content', 'pictureofdoriangray_00_wilde_64kb.mp3'], 'length': 3212477},
-#              {'path': ['Content', 'pictureofdoriangray_01_wilde_64kb.mp3'], 'length': 14720549},
-#              {'path': ['Content', 'pictureofdoriangray_02_wilde_64kb.mp3'], 'length': 17789205},
-#              {'path': ['Content', 'pictureofdoriangray_03_wilde_64kb.mp3'], 'length': 14831935},
-#              {'path': ['Content', 'pictureofdoriangray_04_wilde_64kb.mp3'], 'length': 18504125},
-#              {'path': ['Content', 'pictureofdoriangray_05_wilde_64kb.mp3'], 'length': 14989506},
-#              {'path': ['Content', 'pictureofdoriangray_06_wilde_64kb.mp3'], 'length': 8584490},
-#              {'path': ['Content', 'pictureofdoriangray_07_wilde_64kb.mp3'], 'length': 16034195},
-#              {'path': ['Content', 'pictureofdoriangray_08_wilde_64kb.mp3'], 'length': 17961614}, 
-#              {'path': ['Content', 'pictureofdoriangray_09_wilde_64kb.mp3'], 'length': 11635383}, 
-#              {'path': ['Content', 'pictureofdoriangray_10_wilde_64kb.mp3'], 'length': 11922313}, 
-#              {'path': ['Content', 'pictureofdoriangray_11a_wilde_64kb.mp3'], 'length': 15739961}, 
-#              {'path': ['Content', 'pictureofdoriangray_11b_wilde_64kb.mp3'], 'length': 13680259}, 
-#              {'path': ['Content', 'pictureofdoriangray_12_wilde_64kb.mp3'], 'length': 8111988}, 
-#              {'path': ['Content', 'pictureofdoriangray_13_wilde_64kb.mp3'], 'length': 9159603}, 
-#              {'path': ['Content', 'pictureofdoriangray_14_wilde_64kb.mp3'], 'length': 16480158}, 
-#              {'path': ['Content', 'pictureofdoriangray_15_wilde_64kb.mp3'], 'length': 10966650}, 
-#              {'path': ['Content', 'pictureofdoriangray_16_wilde_64kb.mp3'], 'length': 11260893}, 
-#              {'path': ['Content', 'pictureofdoriangray_17_wilde_64kb.mp3'], 'length': 6395639}, 
-#              {'path': ['Content', 'pictureofdoriangray_18_wilde_64kb.mp3'], 'length': 11528387}, 
-#              {'path': ['Content', 'pictureofdoriangray_19_wilde_64kb.mp3'], 'length': 11443750}, 
-#              {'path': ['Content', 'pictureofdoriangray_20_wilde_64kb.mp3'], 'length': 7585987}, 
-#              {'path': ['Description.txt'], 'length': 1296},
-#              {'path': ['License.txt'], 'length': 51}]
-
-#     piece_length = 131072
-#     want_files = [24,25]
-#     last_piece = 69171
-
-#     myswitchboard = switchboard(dirname='derp', file_list=files,
-#                                 piece_length=piece_length,
-#                                 num_pieces=2087)
-#     myswitchboard.file_starts = file_starts
-#     myswitchboard.seek(273416192)
-#     myswitchboard.set_block('0'*last_piece)
-#     myswitchboard.file_starts = file_starts
-#     myswitchboard.write()
-
-# if __name__ == '__main__':
-#     test_get_write_file()
