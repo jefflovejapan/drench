@@ -44,7 +44,6 @@ class Reactor(object):
                                                           1))
             if not doable_lists.readable:
                 time.sleep(1)
-                continue
 
             for i in doable_lists.readable:  # Doesn't require if test
                 if i == self.sock:

@@ -2,7 +2,6 @@ from bitarray import bitarray
 import struct
 import pudb
 import random
-import socket
 import hashlib
 
 
@@ -197,7 +196,8 @@ class peer(object):
 
             # Tell outfile how far to advance in the overall byte order
             self.torrent.outfile.seek(piece_index * self.torrent.piece_length)
-            self.torrent.outfile.write(block)
+            self.torrent.outfile.set_block(block)
+            self.torrent.outfile.write()
             self.torrent.outfile.mark_off(piece_index)
             print self.torrent.outfile.bitfield
             if self.torrent.outfile.complete:
@@ -233,15 +233,18 @@ class peer(object):
         if not self.valid_indices:
             return
         while 1:
-            next_request = random.choice(self.valid_indices)
-            if next_request not in self.torrent.queued_requests:
-                print 'Setting next_request = {}'.format(next_request)
-                self.torrent.queued_requests.append(next_request)
-                self.next_request = next_request
-                print ('Self.next_request is', self.next_request, 'from',
-                       self.fileno())
-                self.reactor.subscribed['write'].append(self.request)
+            if len(self.torrent.queued_requests) >= len(self.valid_indices):
                 break
+            else:
+                next_request = random.choice(self.valid_indices)
+                if next_request not in self.torrent.queued_requests:
+                    print 'Setting next_request = {}'.format(next_request)
+                    self.torrent.queued_requests.append(next_request)
+                    self.next_request = next_request
+                    print('Self.next_request is', self.next_request, 'from',
+                          self.fileno())
+                    self.reactor.subscribed['write'].append(self.request)
+                    break
 
     def interested(self):
         packet = ''.join(struct.pack('!ib', 1, 2))
@@ -260,14 +263,15 @@ class peer(object):
     def request(self):
         print 'inside request'
         # TODO -- global lookup for id/int conversion
-        print ('self.next request:', self.next_request, '\n',
-               'piece size:', self.torrent.piece_length, 'from', self.fileno())
         if self.next_request == self.torrent.num_pieces - 1:
             piece_length = self.torrent.last_piece_length
         else:
             piece_length = self.torrent.piece_length
         packet = ''.join(struct.pack('!ibiii', 13, 6, self.next_request, 0,
                          piece_length))
+        print 'self.next request:', self.next_request
+        print 'piece size:', piece_length, 'from', self.fileno()
+        print 'packet:', packet
         bytes = self.sock.send(packet)
         if bytes != len(packet):
             raise Exception('couldnt send request')

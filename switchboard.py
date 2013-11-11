@@ -1,5 +1,4 @@
 import os
-import pudb
 import bitarray
 import copy
 from collections import namedtuple
@@ -84,24 +83,6 @@ def get_rightmost_file(byte_index=0, file_starts=[0], files=[]):
         raise Exception('byte_index lower than all file_starts')
 
 
-def get_next_want_file(byte_index=0, want_file_pos=[],
-                       file_starts=[0], files=[], block=''):
-    while block:
-        rightmost = get_rightmost_file(byte_index=byte_index,
-                                       file_starts=file_starts,
-                                       files=files)
-        if files.index(rightmost) in want_file_pos:
-            return os.path.join(*rightmost['path'])
-        else:
-            byte_index = byte_index + rightmost['length']
-            if len(block) > rightmost['length']:
-                block = block[rightmost['length']:]
-            else:
-                block = ''
-    else:
-        return None
-
-
 def get_file_start(byte_index=0, file_starts=[]):
     '''
     Find the starting position of the earliest file that I want to write to
@@ -174,6 +155,7 @@ class switchboard(object):
         self.want_file_pos = get_want_file_pos(self.file_list)
         self.outfiles = []
         self.byte_index = 0
+        self.block = ''
         os.mkdir(self.dirname)
         os.chdir(os.path.join(os.getcwd(), self.dirname))
         want_files = [self.file_list[index] for index in self.want_file_pos]
@@ -188,82 +170,83 @@ class switchboard(object):
                                           piece_length=self.piece_length)
         self.bitfield = build_bitfield(heads_and_tails,
                                        num_pieces=self.num_pieces)
+        pass
+
+    def get_next_want_file(self):
+        '''
+        Returns the leftmost file in the user's list of wanted files
+        (want_file_pos). If the first file it finds isn't in the list,
+        it will keep searching until the length of 'block' is exceeded.
+        '''
+        while self.block:
+            rightmost = get_rightmost_file(byte_index=self.byte_index,
+                                           file_starts=self.file_starts,
+                                           files=self.file_list)
+            if self.file_list.index(rightmost) in self.want_file_pos:
+                return rightmost
+            else:
+                    file_start = (self.file_starts
+                                  [self.file_list.index(rightmost)])
+                    file_length = rightmost['length']
+                    bytes_rem = file_start + file_length - self.byte_index
+                    if len(self.block) > bytes_rem:
+                        self.block = self.block[bytes_rem:]
+                        self.byte_index = self.byte_index + bytes_rem
+                    else:
+                        self.block = ''
+        else:
+            return None
 
     def seek(self, index):
         '''
-        Set how far to advance (bytewise) in file list
+        Set how far to advance (bytewise) in file_list
         '''
         self.byte_index = index
 
-    def write(self, block):
-        # file_start is the byte offset of the rightmost file whose
-        # offset is less than index. It's the offset of the file that
-        # the block starting at byte_index should begin writing to.
-        file_start = get_file_start(byte_index=self.byte_index,
-                                    file_starts=self.file_starts)
+    def set_block(self, block):
+        self.block = block
 
-        # write_path is the file path that we ought to be writing to.
-        write_path = get_next_want_file(byte_index=self.byte_index,
-                                        files=self.file_list,
-                                        file_starts=self.file_starts,
-                                        block=block,
-                                        want_file_pos=self.want_file_pos)
+    def write(self):
+        write_file = self.get_next_want_file()
 
-        if not write_path:
+        if not write_file:
             return
 
+        # Retrieve the file object whose name is write_path
         i = 0
         while i < len(self.outfiles):
-            if self.outfiles[i].name == write_path:
-                write_file = self.outfiles[i]
+            if self.outfiles[i].name == os.path.join(*write_file['path']):
+                write_obj = self.outfiles[i]
                 break
             else:
                 i += 1
         else:
-            pudb.set_trace()
             raise Exception('Nothing matches')
 
+        file_start = self.file_starts[self.file_list.index(write_file)]
         file_internal_index = self.byte_index - file_start
-        write_file.seek(file_internal_index)
-        file_end = (self.file_starts
-                    [self.file_starts.index(file_start) + 1])
+        write_obj.seek(file_internal_index)
 
-        bytes_writable = file_end - file_internal_index
-        if bytes_writable < len(block):
-            write_file.write(block[:bytes_writable])
-            block = block[bytes_writable:]
+        file_length = write_file['length']
+        bytes_writable = file_length - file_internal_index
+        if bytes_writable < len(self.block):
+            write_obj.write(self.block[:bytes_writable])
+            self.block = self.block[bytes_writable:]
+            self.byte_index = self.byte_index + bytes_writable
 
             # The next index in the entire torrent
             j = self.file_starts.index(file_start) + 1
 
             # If we still want a higher index
-            if j < self.want_file_pos[-1]:
-
-                # Index of current file among all files in torrent
-                current_file_index = self.file_starts.index(file_start)
-
-                # Index of that index inside want_file_pos
-                inner_want_index = self.want_file_pos.index(current_file_index)
-
-                # The index of the next file we want among all files in torent
-                next_file_index = self.want_file_pos[inner_want_index + 1]
-
-                # The starting byte value of that file
-                self.byte_index = self.file_starts[next_file_index]
-
-                # If there's enough block to make it there
-                if len(block) > self.byte_index - file_start:
-                    block = block[self.byte_index - file_start]
-
-                    # Start writing again
-                    self.write(block)
+            if j <= self.want_file_pos[-1]:
+                self.write()
 
             else:
                 return
 
         else:
-            write_file.write(block)
-            block = None
+            write_obj.write(self.block)
+            self.block = ''
 
     def mark_off(self, index):
         self.bitfield[index] = False
@@ -311,60 +294,21 @@ class switchboard(object):
 #              {'path': ['Content', 'pictureofdoriangray_18_wilde_64kb.mp3'], 'length': 11528387}, 
 #              {'path': ['Content', 'pictureofdoriangray_19_wilde_64kb.mp3'], 'length': 11443750}, 
 #              {'path': ['Content', 'pictureofdoriangray_20_wilde_64kb.mp3'], 'length': 7585987}, 
-#              {'path': ['Description.txt'], 'length': 1296}, 
+#              {'path': ['Description.txt'], 'length': 1296},
 #              {'path': ['License.txt'], 'length': 51}]
 
-#     pudb.set_trace()
 #     piece_length = 131072
-#     want_files = [0,2]
+#     want_files = [24,25]
+#     last_piece = 69171
 
-#     for j in range(32):
-#         # Want to find the rightmost file that begins at or before byte_index
-#         write_file = get_next_want_file(byte_index=j*piece_length,
-#                                         file_starts=file_starts,
-#                                         files=files,
-#                                         want_file_pos=want_files,
-#                                         block='0'*piece_length)
-
-#         print('piece {} starts at byte {} '
-#               'and maps to {}'.format(j, j * piece_length, write_file))
-
-
-# All the pieces for the first three files:
-#
-# piece 0 starts at byte 0 and maps to somefile(name='Content/174-h.htm')
-# piece 1 starts at byte 131072 and maps to somefile(name='Content/174-h.htm')
-# piece 2 starts at byte 262144 and maps to somefile(name='Content/174-h.htm')
-# piece 3 starts at byte 393216 and maps to somefile(name='Content/174-h.htm')
-# piece 4 starts at byte 524288 and maps to somefile(name='Content/174.txt')
-# piece 5 starts at byte 655360 and maps to somefile(name='Content/174.txt')
-# piece 6 starts at byte 786432 and maps to somefile(name='Content/174.txt')
-# piece 7 starts at byte 917504 and maps to somefile(name='Content/174.txt')
-# piece 8 starts at byte 1048576 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 9 starts at byte 1179648 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 10 starts at byte 1310720 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 11 starts at byte 1441792 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 12 starts at byte 1572864 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 13 starts at byte 1703936 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 14 starts at byte 1835008 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 15 starts at byte 1966080 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 16 starts at byte 2097152 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 17 starts at byte 2228224 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 18 starts at byte 2359296 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 19 starts at byte 2490368 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 20 starts at byte 2621440 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 21 starts at byte 2752512 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 22 starts at byte 2883584 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 23 starts at byte 3014656 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 24 starts at byte 3145728 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 25 starts at byte 3276800 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 26 starts at byte 3407872 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 27 starts at byte 3538944 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 28 starts at byte 3670016 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 29 starts at byte 3801088 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 30 starts at byte 3932160 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-# piece 31 starts at byte 4063232 and maps to somefile(name='Content/pictureofdoriangray_00_wilde_64kb.mp3')
-
+#     myswitchboard = switchboard(dirname='derp', file_list=files,
+#                                 piece_length=piece_length,
+#                                 num_pieces=2087)
+#     myswitchboard.file_starts = file_starts
+#     myswitchboard.seek(273416192)
+#     myswitchboard.set_block('0'*last_piece)
+#     myswitchboard.file_starts = file_starts
+#     myswitchboard.write()
 
 # if __name__ == '__main__':
 #     test_get_write_file()
