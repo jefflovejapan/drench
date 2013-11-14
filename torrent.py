@@ -103,6 +103,8 @@ class Torrent(object):
                 self.peer_ips.append(peer_ip)
             presponse = presponse[6:]
 
+# TODO -- refactor this so it takes peer IPs or
+# sockets (in the case of incoming connections)
     def handshake_peers(self):
         '''
         pstrlen = length of pstr as one byte
@@ -143,20 +145,20 @@ class Torrent(object):
                 data = s.recv(68)  # Peer's handshake - len from docs
                 if data:
                     print 'From {} received: {}'.format(i, repr(data))
-                    self.initpeer(s, data)  # Initializing peers here
+                    self.initpeer(s)  # Initializing peers here
             except:
                 print '{} timed out on recv'.format(i)
                 continue
         else:
             self.peer_ips = []
 
-    def initpeer(self, sock, data):
+    def initpeer(self, sock):
         '''
         Creates a new peer object for a nvalid socket and adds it to reactor's
         listen list
         '''
 
-        tpeer = peer.Peer(sock, self.reactor, self, data)
+        tpeer = peer.Peer(sock, self.reactor, self)
         self.peer_dict[sock] = tpeer
         self.reactor.select_list.append(tpeer)
         # Reactor now listening to tpeer object

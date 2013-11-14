@@ -39,10 +39,12 @@ class Reactor(object):
                 if i == self.vis_listener:
                     # TODO -- expand this into creating new peers
                     vis_socket = self.vis_listener.grab()
-                    # pudb.set_trace()
-                    self.visualizer = Visualizer(new_socket)
+                    self.visualizer = Visualizer(vis_socket)
+                    pudb.set_trace()
+                    self.visualizer.write('o hai there visualzier')
                 elif i == self.peer_listener:
-                    new_socket = self.peer_listener.grab()
+                    new_peer_socket = self.peer_listener.grab()
+                    self.torrent.handshake_peers(new_peer_socket)
                 else:
                     i.read()  # read only returns for Listener
 
