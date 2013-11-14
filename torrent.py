@@ -8,7 +8,7 @@ import peer
 from switchboard import switchboard
 
 
-class torrent(object):
+class Torrent(object):
 
     def __init__(self, torrent_path, port=55308):
         torrent_dict = tparser.bdecode_file(torrent_path)
@@ -129,7 +129,7 @@ class torrent(object):
             print i  # just want to see who i'm talking to
             s = socket.socket()
             s.setblocking(True)
-            s.settimeout(5)
+            s.settimeout(1)
             try:
                 s.connect(i)
             except socket.timeout:
@@ -156,7 +156,7 @@ class torrent(object):
         listen list
         '''
 
-        tpeer = peer.peer(sock, self.reactor, self, data)
+        tpeer = peer.Peer(sock, self.reactor, self, data)
         self.peer_dict[sock] = tpeer
         self.reactor.select_list.append(tpeer)
         # Reactor now listening to tpeer object
@@ -174,7 +174,7 @@ def main():
     argparser.add_argument('torrent_path')
     args = argparser.parse_args()  # Getting path from command line
     torrent_path = args.torrent_path
-    mytorrent = torrent(torrent_path)
+    mytorrent = Torrent(torrent_path)
     mytorrent.tracker_request()
     mytorrent.handshake_peers()
     mytorrent.reactor.event_loop()

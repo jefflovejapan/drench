@@ -2,6 +2,7 @@ from collections import defaultdict
 import select
 from collections import namedtuple
 from listener import Listener
+from visualizer import Visualizer
 import pudb
 
 
@@ -37,22 +38,19 @@ class Reactor(object):
             for i in doable_lists.readable:  # Doesn't require if test
                 if i == self.vis_listener:
                     # TODO -- expand this into creating new peers
-                    self.vis_socket = self.vis_listener.grab()
-                    self.select_list.append(self.vis_socket)
+                    vis_socket = self.vis_listener.grab()
+                    # pudb.set_trace()
+                    self.visualizer = Visualizer(new_socket)
                 elif i == self.peer_listener:
                     new_socket = self.peer_listener.grab()
-                    self.select_list.append(new_socket)
                 else:
                     i.read()  # read only returns for Listener
 
                 wclos = i.write
                 self.subscribed['write'].append(wclos)
-                cclos = i.cleanup
-                self.subscribed['cleanup'].append(cclos)
 
             self.trigger('logic')
             self.trigger('write')
-            self.trigger('cleanup')
 
 
 def main():

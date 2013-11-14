@@ -10,8 +10,11 @@ class Listener(object):
         self.sock.listen(5)
         print 'listening on {}:{}'.format(address, port)
 
-    def read(self):
+    def grab(self):
         return self.sock.accept()
 
     def fileno(self):
         return self.sock.fileno()
+
+    def write(self):
+        pass

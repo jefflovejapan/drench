@@ -4,7 +4,7 @@ import random
 import hashlib
 
 
-class peer(object):
+class Peer(object):
     # Can't initialize without a dictionary. Handshake
     # takes place using socket before peer init
     def __init__(self, sock, reactor, torrent, data):
@@ -274,7 +274,3 @@ class peer(object):
         bytes = self.sock.send(packet)
         if bytes != len(packet):
             raise Exception('couldnt send request')
-
-    def cleanup(self):
-        # print 'cleaning up'
-        self.torrent.queued_requests = []

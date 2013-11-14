@@ -125,4 +125,4 @@ def bdecode_file(filename):
         Bdecodes a .torrent or other bencoded file
     '''
     with open(filename) as f:
-        return bdecode_file(f.read())
+        return bdecode(f.read())
