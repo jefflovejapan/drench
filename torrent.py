@@ -85,7 +85,7 @@ class torrent(object):
                                   params=payload)
 
         # Decoding response from tracker
-        self.tracker_response = tparser.bdecodes(self.r.text.encode('latin-1'))
+        self.tracker_response = tparser.bdecode(self.r.text.encode('latin-1'))
         self.get_peer_ips()
 
     # TODO - create peer objects with ref to reactor
