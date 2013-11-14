@@ -1,10 +1,7 @@
 from collections import defaultdict
 import socket
 import select
-import time
-import pudb
 from collections import namedtuple
-from bitarray import bitarray
 
 
 select_response = namedtuple('select_response',
@@ -39,11 +36,7 @@ class Reactor(object):
     def event_loop(self):
         while 1:
             doable_lists = select_response(*select.select(self.select_list,
-                                                          self.select_list,
-                                                          self.select_list,
-                                                          1))
-            if not doable_lists.readable:
-                time.sleep(1)
+                                                          [], [], 1))
 
             for i in doable_lists.readable:  # Doesn't require if test
                 if i == self.sock:
@@ -53,10 +46,10 @@ class Reactor(object):
                 else:
                     i.read()
 
-            wclos = i.write
-            self.subscribed['write'].append(wclos)
-            cclos = i.cleanup
-            self.subscribed['cleanup'].append(cclos)
+                wclos = i.write
+                self.subscribed['write'].append(wclos)
+                cclos = i.cleanup
+                self.subscribed['cleanup'].append(cclos)
 
             self.trigger('logic')
             self.trigger('write')

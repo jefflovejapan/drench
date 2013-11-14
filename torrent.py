@@ -3,7 +3,6 @@ import socket
 import tparser
 import hashlib
 import argparse
-import pudb
 import reactor
 import peer
 from switchboard import switchboard
@@ -12,7 +11,7 @@ from switchboard import switchboard
 class torrent(object):
 
     def __init__(self, torrent_path, port=55308):
-        torrent_dict = tparser.bdecode(torrent_path)
+        torrent_dict = tparser.bdecode_file(torrent_path)
         self.torrent_dict = torrent_dict
         self.peer_dict = {}
         self.peer_ips = []
@@ -99,7 +98,7 @@ class torrent(object):
         presponse = [ord(i) for i in self.tracker_response['peers']]
         while presponse:
             peer_ip = (('.'.join(str(x) for x in presponse[0:4]),
-                       256*presponse[4] + presponse[5]))
+                       256 * presponse[4] + presponse[5]))
             if peer_ip not in self.peer_ips:
                 self.peer_ips.append(peer_ip)
             presponse = presponse[6:]
@@ -118,7 +117,7 @@ class torrent(object):
         info_hash = self.hash_string
         peer_id = self.peer_id
 
-        packet = ''.join([chr(pstrlen), pstr, chr(0)*8, info_hash,
+        packet = ''.join([chr(pstrlen), pstr, chr(0) * 8, info_hash,
                           peer_id])
         print "Here's my packet {}".format(repr(packet))
         # TODO -- add some checks in here so that I'm talking
