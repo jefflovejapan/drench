@@ -1,6 +1,8 @@
 import os
 import bitarray
 import copy
+import json
+import pudb
 from collections import namedtuple
 
 start_end_pair = namedtuple('start_end_pair', 'start end')
@@ -146,7 +148,8 @@ def build_bitfield(heads_and_tails=[], num_pieces=0):
 
 
 class switchboard(object):
-    def __init__(self, dirname='', file_list=[], piece_length=0, num_pieces=0):
+    def __init__(self, dirname='', file_list=[], piece_length=0, num_pieces=0,
+                 visualizer=None):
         self.dirname = dirname
         self.file_list = copy.deepcopy(file_list)
         self.piece_length = piece_length
@@ -156,6 +159,8 @@ class switchboard(object):
         self.outfiles = []
         self.byte_index = 0
         self.block = ''
+        # TODO -- possibly a problem when a visualizer signs on halfway
+        self.visualizer = visualizer
         os.mkdir(self.dirname)
         os.chdir(os.path.join(os.getcwd(), self.dirname))
         want_files = [self.file_list[index] for index in self.want_file_pos]
@@ -234,6 +239,10 @@ class switchboard(object):
 
         # If we can't write the entire block
         if bytes_writable < len(self.block):
+            write_dict = {'kind': 'write', 'position': file_internal_index,
+                          'length': bytes_writable}
+            write_json = json.dumps(write_dict)
+            self.visualize(write_json)
             write_obj.write(self.block[:bytes_writable])
             self.block = self.block[bytes_writable:]
             self.byte_index = self.byte_index + bytes_writable
@@ -250,11 +259,19 @@ class switchboard(object):
 
         # If we can write the entire block
         else:
+            write_dict = {'kind': 'write', 'position': file_internal_index,
+                          'length': len(self.block)}
+            write_json = json.dumps(write_dict)
+            self.visualize(write_json)
             write_obj.write(self.block)
             self.block = ''
 
     def mark_off(self, index):
         self.bitfield[index] = False
+
+    def visualize(self, data):
+        if self.visualizer:
+            self.visualizer.write(data)
 
     @property
     def complete(self):

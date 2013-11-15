@@ -26,7 +26,8 @@ class Torrent(object):
                                    ['name'], file_list=self.torrent_dict
                                    ['info']['files'], piece_length=
                                    self.piece_length, num_pieces=
-                                   self.num_pieces)
+                                   self.num_pieces, visualizer=
+                                   self.reactor.visualizer)
 
     @property
     def piece_length(self):
@@ -167,8 +168,6 @@ class Torrent(object):
         thispeer = self.peer_dict.pop(tpeer.sock)
         print 'peer with fileno {} killing itself'.format(thispeer.fileno())
         self.reactor.select_list.remove(thispeer)
-        # TODO -- do I need to clear this peer out of memory?
-        # How do I do that?
 
 
 def main():

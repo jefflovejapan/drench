@@ -19,6 +19,7 @@ class Reactor(object):
         # Adding server socket to select_list to check for new connections
         # in same call to select inside event loop
         self.select_list = [self.vis_listener, self.peer_listener]
+        self.visualizer = Visualizer()
         self.out_sock = None
 
     def subscribe(self, callback, event):
@@ -37,12 +38,14 @@ class Reactor(object):
 
             for i in doable_lists.readable:  # Doesn't require if test
                 if i == self.vis_listener:
-                    # TODO -- expand this into creating new peers
-                    vis_socket = self.vis_listener.grab()
-                    self.visualizer = Visualizer(vis_socket)
-                    pudb.set_trace()
+
+                    # Don't care about address here
+                    vis_socket, _ = self.vis_listener.grab()
+
+                    self.visualizer.set_sock(vis_socket)
                     self.visualizer.write('o hai there visualzier')
                 elif i == self.peer_listener:
+                    # TODO -- expand this into creating new peers
                     new_peer_socket = self.peer_listener.grab()
                     self.torrent.handshake_peers(new_peer_socket)
                 else:

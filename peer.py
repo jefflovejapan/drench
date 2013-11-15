@@ -2,6 +2,8 @@ from bitarray import bitarray
 import struct
 import random
 import hashlib
+import json
+import pudb
 
 
 class Peer(object):
@@ -268,9 +270,12 @@ class Peer(object):
             piece_length = self.torrent.piece_length
         packet = ''.join(struct.pack('!ibiii', 13, 6, self.next_request, 0,
                          piece_length))
-        print 'self.next request:', self.next_request
-        print 'piece size:', piece_length, 'from', self.fileno()
-        print 'packet:', packet
         bytes = self.sock.send(packet)
+        request_dict = {'kind': 'request',
+                        'peer': self.sock.getpeername(),
+                        'piece': self.next_request}
+        request_json = json.dumps(request_dict)
+        print 'next request:', request_json
+        self.torrent.outfile.visualize(request_json)
         if bytes != len(packet):
             raise Exception('couldnt send request')
