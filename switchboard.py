@@ -147,7 +147,7 @@ def build_bitfield(heads_and_tails=[], num_pieces=0):
     return this_bitfield
 
 
-class switchboard(object):
+class Switchboard(object):
     def __init__(self, dirname='', file_list=[], piece_length=0, num_pieces=0,
                  visualizer=None):
         self.dirname = dirname

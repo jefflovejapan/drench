@@ -5,7 +5,30 @@ import hashlib
 import argparse
 import reactor
 import peer
-from switchboard import switchboard
+from visualizer import Visualizer
+from listener import Listener
+from switchboard import Switchboard
+
+
+class PeerListener(Listener):
+    def __init__(self, address='127.0.0.1',
+                 port=7000, torrent=None):
+        Listener.__init__(self, address, port)
+
+    def read(self):
+        newsock = self.sock.accept()
+        # It's add_peer's job to add the peer to event_loop
+        self.torrent.add_peer(newsock)
+
+
+class VisListener(Listener):
+    def __init__(self, address='127.0.0.1',
+                 port=7000, torrent=None):
+        Listener.init(self, address, port)
+
+    def read(self):
+        newsock = self.sock.accept()
+        self.torrent.visualizer.set_sock(newsock)
 
 
 class Torrent(object):
@@ -20,14 +43,16 @@ class Torrent(object):
         self.tracker_response = None
         self.peer_dict = {}
         self.hash_string = None
+        # Visualizer lives here but switchboard has a ref
+        self.visualizer = Visualizer()
         self.queued_requests = []
         self.reactor = reactor.Reactor()
-        self.outfile = switchboard(dirname=self.torrent_dict['info']
-                                   ['name'], file_list=self.torrent_dict
-                                   ['info']['files'], piece_length=
-                                   self.piece_length, num_pieces=
-                                   self.num_pieces, visualizer=
-                                   self.reactor.visualizer)
+        self.switchboard = Switchboard(dirname=self.torrent_dict['info']
+                                       ['name'], file_list=self.torrent_dict
+                                       ['info']['files'], piece_length=
+                                       self.piece_length, num_pieces=
+                                       self.num_pieces, visualizer=
+                                       self.visualizer)
 
     @property
     def piece_length(self):

@@ -1,7 +1,12 @@
 import socket
+import abstractmethod
+import ABCMeta
 
 
 class Listener(object):
+
+    __metaclass__ = ABCMeta
+
     def __init__(self, address='127.0.0.1', port=7000):
         self.sock = socket.socket()
         self.sock.bind((address, port))
@@ -10,8 +15,9 @@ class Listener(object):
         self.sock.listen(5)
         print 'listening on {}:{}'.format(address, port)
 
-    def grab(self):
-        return self.sock.accept()
+    @abstractmethod
+    def read(self):
+        pass
 
     def fileno(self):
         return self.sock.fileno()
