@@ -242,7 +242,7 @@ class Switchboard(object):
             write_dict = {'kind': 'write', 'position': file_internal_index,
                           'length': bytes_writable}
             write_json = json.dumps(write_dict)
-            self.visualize(write_json)
+            self.visualizer.visualize(write_json)
             write_obj.write(self.block[:bytes_writable])
             self.block = self.block[bytes_writable:]
             self.byte_index = self.byte_index + bytes_writable
@@ -262,16 +262,12 @@ class Switchboard(object):
             write_dict = {'kind': 'write', 'position': file_internal_index,
                           'length': len(self.block)}
             write_json = json.dumps(write_dict)
-            self.visualize(write_json)
+            self.visualizer.visualize(write_json)
             write_obj.write(self.block)
             self.block = ''
 
     def mark_off(self, index):
         self.bitfield[index] = False
-
-    def visualize(self, data):
-        if self.visualizer:
-            self.visualizer.write(data)
 
     @property
     def complete(self):

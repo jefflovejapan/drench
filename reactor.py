@@ -1,8 +1,6 @@
 from collections import defaultdict
 import select
 from collections import namedtuple
-from listener import Listener
-from visualizer import Visualizer
 import pudb
 
 
@@ -13,13 +11,10 @@ select_response = namedtuple('select_response',
 class Reactor(object):
     def __init__(self):
         self.subscribed = defaultdict(list)
-        self.vis_listener = Listener(port=7000)
-        self.peer_listener = Listener(port=8000)
 
         # Adding server socket to select_list to check for new connections
         # in same call to select inside event loop
-        self.select_list = [self.vis_listener, self.peer_listener]
-        self.visualizer = Visualizer()
+        self.select_list = []
         self.out_sock = None
 
     def subscribe(self, callback, event):
@@ -31,25 +26,17 @@ class Reactor(object):
                                                  # happens
         self.subscribed[event] = []              # Zero everything out
 
+    def add_listeners(self, listeners):
+        for listener in listeners:
+            self.select_list.append(listener)
+
     def event_loop(self):
         while 1:
             doable_lists = select_response(*select.select(self.select_list,
                                                           [], [], 1))
 
             for i in doable_lists.readable:  # Doesn't require if test
-                if i == self.vis_listener:
-
-                    # Don't care about address here
-                    vis_socket, _ = self.vis_listener.grab()
-
-                    self.visualizer.set_sock(vis_socket)
-                    self.visualizer.write('o hai there visualzier')
-                elif i == self.peer_listener:
-                    # TODO -- expand this into creating new peers
-                    new_peer_socket = self.peer_listener.grab()
-                    self.torrent.handshake_peers(new_peer_socket)
-                else:
-                    i.read()  # read only returns for Listener
+                i.read()  # read only returns for Listener
 
                 wclos = i.write
                 self.subscribed['write'].append(wclos)

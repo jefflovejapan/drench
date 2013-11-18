@@ -195,15 +195,16 @@ class Peer(object):
             print ('writing piece {}. Length is '
                    '{}').format(repr(block)[:10] + '...', len(block))
 
-            # Tell outfile how far to advance in the overall byte order
-            self.torrent.outfile.seek(piece_index * self.torrent.piece_length)
-            self.torrent.outfile.set_block(block)
-            self.torrent.outfile.write()
-            self.torrent.outfile.mark_off(piece_index)
-            print self.torrent.outfile.bitfield
-            if self.torrent.outfile.complete:
+            # Tell switchboard how far to advance in the overall byte order
+            self.torrent.switchboard.seek(piece_index *
+                                          self.torrent.piece_length)
+            self.torrent.switchboard.set_block(block)
+            self.torrent.switchboard.write()
+            self.torrent.switchboard.mark_off(piece_index)
+            print self.torrent.switchboard.bitfield
+            if self.torrent.switchboard.complete:
                 print 'bitfield full'
-                self.torrent.outfile.close()
+                self.torrent.switchboard.close()
         else:
             raise Exception("hash of piece doesn't"
                             "match hash in torrent_dict")
@@ -226,7 +227,7 @@ class Peer(object):
         #   - We're interested in the piece (it's in torrent.outfile.bitfield)
         #   - The peer has the piece (it's available)
         for i in range(self.torrent.num_pieces):
-            if (self.torrent.outfile.bitfield[i] is True
+            if (self.torrent.switchboard.bitfield[i] is True
                     and self.bitfield[i] is True):
                 self.valid_indices.append(i)
 
@@ -276,6 +277,6 @@ class Peer(object):
                         'piece': self.next_request}
         request_json = json.dumps(request_dict)
         print 'next request:', request_json
-        self.torrent.outfile.visualize(request_json)
+        self.torrent.visualizer.visualize(request_json)
         if bytes != len(packet):
             raise Exception('couldnt send request')

@@ -8,7 +8,7 @@ class Visualizer(object):
         self.outfile = open(outfile, 'w')
         self.sock = None
 
-    def write(self, data):
+    def visualize(self, data):
         if self.sock:
             self.outfile.write(data + '\n')
 

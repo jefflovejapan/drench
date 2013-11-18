@@ -1,6 +1,5 @@
 import socket
-import abstractmethod
-import ABCMeta
+from abc import abstractmethod, ABCMeta
 
 
 class Listener(object):

@@ -14,6 +14,7 @@ class PeerListener(Listener):
     def __init__(self, address='127.0.0.1',
                  port=7000, torrent=None):
         Listener.__init__(self, address, port)
+        self.torrent = torrent
 
     def read(self):
         newsock = self.sock.accept()
@@ -24,7 +25,8 @@ class PeerListener(Listener):
 class VisListener(Listener):
     def __init__(self, address='127.0.0.1',
                  port=7000, torrent=None):
-        Listener.init(self, address, port)
+        Listener.__init__(self, address, port)
+        self.torrent = torrent
 
     def read(self):
         newsock = self.sock.accept()
@@ -47,6 +49,8 @@ class Torrent(object):
         self.visualizer = Visualizer()
         self.queued_requests = []
         self.reactor = reactor.Reactor()
+        self.reactor.add_listeners([PeerListener(torrent=self, port=7000),
+                                    VisListener(torrent=self, port=8000)])
         self.switchboard = Switchboard(dirname=self.torrent_dict['info']
                                        ['name'], file_list=self.torrent_dict
                                        ['info']['files'], piece_length=
