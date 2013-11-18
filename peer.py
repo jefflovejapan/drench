@@ -209,13 +209,11 @@ class Peer(object):
             raise Exception("hash of piece doesn't"
                             "match hash in torrent_dict")
 
-        # TODO -- add check for hash equality
         self.reactor.subscribed['logic'].append(self.determine_next_request)
 
     def pcancel(self):
         print 'pcancel'
 
-    # TODO -- revise_this, change method name
     def determine_next_request(self):
         '''
         Figures out what needs to be done next
@@ -264,7 +262,6 @@ class Peer(object):
 
     def request(self):
         print 'inside request'
-        # TODO -- global lookup for id/int conversion
         if self.next_request == self.torrent.num_pieces - 1:
             piece_length = self.torrent.last_piece_length
         else:

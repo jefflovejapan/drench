@@ -35,7 +35,6 @@ def get_want_file_pos(file_list):
         if all_answer in ('y', 'n'):
             break
     if all_answer == 'y':
-        # TODO -- Can have something simpler here when user wants everything
         want_file_pos = range(len(file_list))
         return want_file_pos
     if all_answer == 'n':
@@ -159,7 +158,6 @@ class Switchboard(object):
         self.outfiles = []
         self.byte_index = 0
         self.block = ''
-        # TODO -- possibly a problem when a visualizer signs on halfway
         self.visualizer = visualizer
         os.mkdir(self.dirname)
         os.chdir(os.path.join(os.getcwd(), self.dirname))

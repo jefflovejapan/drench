@@ -5,6 +5,8 @@ import hashlib
 import argparse
 import reactor
 import peer
+import time
+import pudb
 from visualizer import Visualizer
 from listener import Listener
 from switchboard import Switchboard
@@ -12,12 +14,12 @@ from switchboard import Switchboard
 
 class PeerListener(Listener):
     def __init__(self, address='127.0.0.1',
-                 port=7000, torrent=None):
+                 port=8000, torrent=None):
         Listener.__init__(self, address, port)
         self.torrent = torrent
 
     def read(self):
-        newsock = self.sock.accept()
+        newsock, _ = self.sock.accept()
         # It's add_peer's job to add the peer to event_loop
         self.torrent.add_peer(newsock)
 
@@ -29,7 +31,7 @@ class VisListener(Listener):
         self.torrent = torrent
 
     def read(self):
-        newsock = self.sock.accept()
+        newsock, _ = self.sock.accept()
         self.torrent.visualizer.set_sock(newsock)
 
 
@@ -118,7 +120,6 @@ class Torrent(object):
         self.tracker_response = tparser.bdecode(self.r.text.encode('latin-1'))
         self.get_peer_ips()
 
-    # TODO - create peer objects with ref to reactor
     def get_peer_ips(self):
         '''
         Generates list of peer IPs from tracker response. Note: not all of
@@ -157,6 +158,9 @@ class Torrent(object):
 
         # TODO -- think about why i'm deleting self.peer_ips.
         # What was the point of it? Why won't I need it?
+        # Think about what we're doing -- using this list to create
+        # new peer objects. Should make this functional, that way I
+        # can also call when I get new peers.
         for i in self.peer_ips:
             print i  # just want to see who i'm talking to
             s = socket.socket()
@@ -192,6 +196,10 @@ class Torrent(object):
         self.peer_dict[sock] = tpeer
         self.reactor.select_list.append(tpeer)
         # Reactor now listening to tpeer object
+
+    def add_peer(self, sock):
+        print 'adding peer at', sock.getpeername()
+        time.sleep(3)
 
     def kill_peer(self, tpeer):
         thispeer = self.peer_dict.pop(tpeer.sock)
