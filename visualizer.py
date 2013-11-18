@@ -1,9 +1,9 @@
+import socket
 import os
+import txws
 from collections import namedtuple
-from tparser import bdecode_file
 from bitarray import bitarray
 from twisted.internet import reactor
-from twisted.internet.protocol import Factory
 import pudb
 
 
@@ -21,7 +21,14 @@ import pudb
 #     the state of this torrent
 #       - *Which bytes* do we have in the file(s)?
 #       - Who are the peers?
+
+# Accepting incoming connections to this visualizer
+# **Managing the state stuff
+
+
 download_file = namedtuple('download_file', 'path bits')
+
+# TODO -- put inside Visualizer as method
 
 
 def init_state(t_dict):
@@ -31,11 +38,13 @@ def init_state(t_dict):
                                              bits=bitarray('0' *
                                                            afile['length']))
                                for afile in t_dict['info']['files']]
-    else:
+    elif 'name' in t_dict['info']:
         state_dict['files'] = [download_file(path=t_dict['info']['name'],
                                              bits=bitarray('0' *
                                                            t_dict['info']
                                                                  ['length']))]
+    else:
+        state_dict['files'] = []
     for some_file in state_dict['files']:
         print some_file.path, len(some_file.bits)
     print '\n\n'
@@ -45,10 +54,13 @@ def init_state(t_dict):
 class Visualizer(object):
     # outfile is temporary while I figure out how to implement
     # visualization
-    def __init__(self, outfile='derp.txt', t_dict={}):
-        self.outfile = open(outfile, 'w')
-        self.sock = None
-        self.state = init_state(t_dict)
+    # def __init__(self, t_dict={}, address=('127.0.0.1', 7000)):
+    #     self.sock = socket.socket()
+    #     self.sock.connect(address)
+    #     self.state = init_state(t_dict)
+    #     self.data_source = address
+    def __init__(self):
+        pass
 
     def visualize(self, data):
         if self.sock:
@@ -60,6 +72,21 @@ class Visualizer(object):
     def set_sock(self, sock):
         self.sock = sock
 
+
+class Echo(txws.WebSocketProtocol):
+    def dataReceived(self, data):
+        self.transport.write(data)
+
+
+class EchoFactory(txws.WebSocketFactory):
+    def buildProtocol(self, addr):
+        return Echo()
+
+
+def main():
+    reactor.listenTCP(8000, txws.WebSocketFactory(EchoFactory))
+    reactor.run()
+
+
 if __name__ == '__main__':
-    init_state(bdecode_file('dorian.torrent'))
-    init_state(bdecode_file('torrent.torrent'))
+    main()

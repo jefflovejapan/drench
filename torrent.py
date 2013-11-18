@@ -48,7 +48,8 @@ class Torrent(object):
         self.peer_dict = {}
         self.hash_string = None
         # Visualizer lives here but switchboard has a ref
-        self.visualizer = Visualizer()
+        self.visualizer = Visualizer(self.torrent_dict,
+                                     address=self.sock.getsockname()[0])
         self.queued_requests = []
         self.reactor = reactor.Reactor()
         self.reactor.add_listeners([PeerListener(torrent=self, port=7000),
