@@ -3,7 +3,7 @@ import os
 import txws
 from collections import namedtuple
 from bitarray import bitarray
-from twisted.internet import reactor
+from twisted.internet import protocol, reactor
 import pudb
 
 
@@ -78,13 +78,13 @@ class Echo(txws.WebSocketProtocol):
         self.transport.write(data)
 
 
-class EchoFactory(txws.WebSocketFactory):
+class EchoFactory(protocol.Factory):
     def buildProtocol(self, addr):
         return Echo()
 
 
 def main():
-    reactor.listenTCP(8000, txws.WebSocketFactory(EchoFactory))
+    reactor.listenTCP(8000, txws.WebSocketFactory(EchoFactory()))
     reactor.run()
 
 

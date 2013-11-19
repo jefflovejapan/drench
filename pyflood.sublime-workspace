@@ -1,0 +1,732 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"url",
+				"url_for"
+			],
+			[
+				"out",
+				"out_link"
+			],
+			[
+				"input",
+				"input_slug"
+			],
+			[
+				"row",
+				"row_id"
+			],
+			[
+				"app",
+				"app_lulu"
+			],
+			[
+				"open",
+				"open_result"
+			],
+			[
+				"response",
+				"response_message"
+			],
+			[
+				"comman",
+				"command_json"
+			],
+			[
+				"command",
+				"command_dict"
+			],
+			[
+				"result",
+				"result_url"
+			],
+			[
+				"camera",
+				"camera_str"
+			],
+			[
+				"cam",
+				"camera_str"
+			],
+			[
+				"snappy",
+				"snappyPrompt"
+			],
+			[
+				"disc",
+				"DISCOVERY_MSG"
+			],
+			[
+				"fizz",
+				"fizzbuzz"
+			],
+			[
+				"new",
+				"newAnchors"
+			],
+			[
+				"anchor",
+				"anchorPat"
+			],
+			[
+				"anch",
+				"anchorMatch"
+			],
+			[
+				"k",
+				"k"
+			],
+			[
+				"known",
+				"knownFactors"
+			],
+			[
+				"factor",
+				"factorList"
+			],
+			[
+				"buffer",
+				"buffersize"
+			],
+			[
+				"sum",
+				"sumPrimes"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"command_palette":
+	{
+		"height": 392.0,
+		"selected_items":
+		[
+			[
+				"markd",
+				"Preferences: MarkdownEditing Settings – User"
+			],
+			[
+				"settings",
+				"Preferences: MarkdownEditing Settings – User"
+			],
+			[
+				"setting",
+				"Preferences: Settings - Default"
+			],
+			[
+				"repl",
+				"SublimeREPL: Python"
+			],
+			[
+				"sett",
+				"Preferences: Settings - Default"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"package",
+				"Preferences: Browse Packages"
+			],
+			[
+				"install pack",
+				"Package Control: Install Package"
+			],
+			[
+				"sublimerepl",
+				"SublimeREPL: Python"
+			],
+			[
+				"instal",
+				"Package Control: Install Package"
+			],
+			[
+				"terminal",
+				"Preferences: Terminal Settings – Default"
+			],
+			[
+				"user",
+				"Preferences: Terminal Settings – User"
+			],
+			[
+				"enable",
+				"Package Control: Enable Package"
+			],
+			[
+				"disable",
+				"Package Control: Disable Package"
+			],
+			[
+				"pyflake",
+				"User: Python Flake8 Lint"
+			],
+			[
+				"project",
+				"Project: Save As"
+			],
+			[
+				"packa",
+				"Package Control: Install Package"
+			],
+			[
+				"python",
+				"User: Python Flake8 Lint"
+			],
+			[
+				"pyflak",
+				"User: Python Flake8 Lint"
+			],
+			[
+				"pyfl",
+				"User: Python Flake8 Lint"
+			],
+			[
+				"pyfla",
+				"User: Python Flake8 Lint"
+			],
+			[
+				"remove",
+				"Package Control: Remove Package"
+			],
+			[
+				"linter",
+				"Preferences: SublimeLinter Settings – Default"
+			],
+			[
+				"sublime",
+				"Preferences: SublimeLinter Settings – User"
+			],
+			[
+				"inden",
+				"Indent XML"
+			],
+			[
+				"mark",
+				"Preferences: MarkdownEditing Settings – User"
+			],
+			[
+				"view",
+				"View In Browser"
+			],
+			[
+				"packag",
+				"Package Control: Add Repository"
+			],
+			[
+				"prefere",
+				"Preferences: Settings - User"
+			],
+			[
+				"prefer",
+				"Preferences: Settings - Default"
+			],
+			[
+				"markdown",
+				"Preferences: MarkdownEditing Settings – User"
+			],
+			[
+				"dis",
+				"SublimeLinter: Disable Linting"
+			],
+			[
+				"disa",
+				"SublimeLinter: Disable Linting"
+			],
+			[
+				"markdow",
+				"Preferences: MarkdownEditing Settings – User"
+			],
+			[
+				"sublimelint",
+				"SublimeLinter: Disable Linting"
+			],
+			[
+				"Package Control: ",
+				"Package Control: Remove Package"
+			],
+			[
+				"package setting",
+				"Preferences: Package Control Settings – User"
+			],
+			[
+				"ip",
+				"Package Control: Install Package"
+			],
+			[
+				"ti",
+				"Convert Case: Title Case"
+			],
+			[
+				"t",
+				"Convert Case: Title Case"
+			],
+			[
+				"l",
+				"Convert Case: Lower Case"
+			],
+			[
+				"tit",
+				"Convert Case: Title Case"
+			],
+			[
+				"titl",
+				"Convert Case: Title Case"
+			],
+			[
+				"low",
+				"Convert Case: Lower Case"
+			],
+			[
+				"lower",
+				"Convert Case: Lower Case"
+			],
+			[
+				"title",
+				"Convert Case: Title Case"
+			],
+			[
+				"inst",
+				"Package Control: Install Package"
+			],
+			[
+				"insta",
+				"Package Control: Install Package"
+			],
+			[
+				"pack",
+				"Package Control: Install Package"
+			],
+			[
+				"pyth",
+				"Set Syntax: Python"
+			],
+			[
+				"snippet",
+				"Snippet: #!/usr/bin/env"
+			],
+			[
+				"apples",
+				"Set Syntax: AppleScript"
+			],
+			[
+				"apple",
+				"Set Syntax: AppleScript"
+			],
+			[
+				"md",
+				"Set Syntax: Markdown"
+			],
+			[
+				"java",
+				"Set Syntax: JavaScript"
+			]
+		],
+		"width": 449.0
+	},
+	"console":
+	{
+		"height": 125.0
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/Users/jeffblagdon/Developer/torrents/torrent.py",
+		"/Users/jeffblagdon/Developer/torrents/tparser.py",
+		"/Users/jeffblagdon/Developer/torrents/pyflood.sublime-workspace",
+		"/Users/jeffblagdon/Developer/torrents/derp.py",
+		"/Users/jeffblagdon/Developer/torrents/torrent.torrent",
+		"/Users/jeffblagdon/Desktop/twittertax.md",
+		"/Users/jeffblagdon/Library/Application Support/Sublime Text 2/Packages/User/Markdown.sublime-settings",
+		"/Users/jeffblagdon/Developer/torrents/tparser,py",
+		"/Users/jeffblagdon/Developer/torrents/tparser",
+		"/Users/jeffblagdon/Developer/algorithms/recursion/fibanacci.py",
+		"/Users/jeffblagdon/Developer/algorithms/LinkedList.py",
+		"/Users/jeffblagdon/Developer/algorithms/recursion/lastindex.py",
+		"/Users/jeffblagdon/Developer/algorithms/recursion/dumb_sum.py",
+		"/Users/jeffblagdon/Developer/torrents/string_that_doesnt_work.txt",
+		"/Users/jeffblagdon/Developer/torrents/walkthrough.txt",
+		"/Users/jeffblagdon/Desktop/torrent_text.txt",
+		"/Users/jeffblagdon/Developer/torrents/.git/COMMIT_EDITMSG",
+		"/Users/jeffblagdon/Developer/torrents/README.md",
+		"/Users/jeffblagdon/Developer/torrents/tparser_alternate.py",
+		"/Users/jeffblagdon/Desktop/flagfromserver-3.torrent",
+		"/Users/jeffblagdon/Developer/torrents/.gitignore",
+		"/Users/jeffblagdon/Developer/torrents/parser.py",
+		"/usr/local/lib/python2.7/site-packages/bencode/__init__.py",
+		"/Users/jeffblagdon/Developer/snappy/snappy.py",
+		"/Users/jeffblagdon/Developer/crisco/templates/main.html",
+		"/usr/local/lib/python2.7/site-packages/bencode/BTL.py",
+		"/Users/jeffblagdon/Dropbox/Apps/Drafts/python book notes.txt",
+		"/Users/jeffblagdon/Desktop/test.py",
+		"/Users/jeffblagdon/Desktop/derek.md",
+		"/Users/jeffblagdon/Desktop/grep.py",
+		"/Users/jeffblagdon/Desktop/dell.md",
+		"/Users/jeffblagdon/Desktop/derp.py",
+		"/Users/jeffblagdon/Library/Application Support/Sublime Text 2/Packages/User/Preferences.sublime-settings",
+		"/Users/jeffblagdon/Library/Application Support/Sublime Text 2/Packages/Default/Preferences.sublime-settings",
+		"/Users/jeffblagdon/Developer/algorithms/Queue.py",
+		"/Users/jeffblagdon/Desktop/Queue.py",
+		"/Users/jeffblagdon/Desktop/LinkedList.py",
+		"/Users/jeffblagdon/Developer/algorithms/lists/unorderedlist.py",
+		"/Users/jeffblagdon/Developer/algorithms/crisco/base_62_converter.py",
+		"/Users/jeffblagdon/Developer/algorithms/crisco/crisco.py",
+		"/Users/jeffblagdon/Developer/algorithms/crisco/application.py",
+		"/Users/jeffblagdon/Developer/algorithms/crisco/.git/COMMIT_EDITMSG",
+		"/Users/jeffblagdon/Developer/algorithms/crisco/templates/main.html",
+		"/Users/jeffblagdon/Developer/MyFlaskTutorial/application.py",
+		"/Users/jeffblagdon/Developer/MyFlaskTutorial/application_lulu.py",
+		"/Users/jeffblagdon/Developer/MyFlaskTutorial/templates/layout_lulu.html",
+		"/Users/jeffblagdon/Developer/algorithms/crisco/static/style.css",
+		"/Users/jeffblagdon/Developer/algorithms/crisco/templates/style.css",
+		"/Users/jeffblagdon/Developer/MyFlaskTutorial/static/style_lulu.css",
+		"/Users/jeffblagdon/Developer/algorithms/crisco/crisco_test.py",
+		"/Users/jeffblagdon/Developer/algorithms/crisco.py",
+		"/Users/jeffblagdon/Developer/algorithms/crisco/readme.md",
+		"/Users/jeffblagdon/Developer/algorithms/crisco/crisco_table.db",
+		"/Users/jeffblagdon/Developer/algorithms/base_62_converter.py",
+		"/Users/jeffblagdon/Developer/algorithms/crisco_test.py",
+		"/Users/jeffblagdon/Developer/algorithms/crisco/readme.txt",
+		"/Users/jeffblagdon/Developer/algorithms/top10000.txt",
+		"/Users/jeffblagdon/Developer/algorithms/crisco_table.db",
+		"/Users/jeffblagdon/Developer/algorithms/sql_test.py",
+		"/Users/jeffblagdon/Developer/algorithms/Deque.py",
+		"/Users/jeffblagdon/PATH",
+		"/algorithms/Queue.py",
+		"/Users/jeffblagdon/Desktop/twitter_ipo.md",
+		"/Users/jeffblagdon/Desktop/cbs.md",
+		"/Users/jeffblagdon/Desktop/twitter_diversity.md",
+		"/Users/jeffblagdon/Desktop/nasa.md",
+		"/Users/jeffblagdon/Desktop/pay_us.md",
+		"/Users/jeffblagdon/Desktop/nexus5_specs.md",
+		"/Users/jeffblagdon/Desktop/blackberry.md",
+		"/Users/jeffblagdon/Developer/MyFlaskTutorial/Jeff",
+		"/Users/jeffblagdon/Developer/MyFlaskTutorial/Jeff Blagdon_34.txt",
+		"/Users/jeffblagdon/Developer/MyFlaskTutorial/Blagdon_34.txt",
+		"/Users/jeffblagdon/Library/Application Support/Sublime Text 2/Packages/Terminal/Terminal.sublime-settings",
+		"/Users/jeffblagdon/Library/Application Support/Sublime Text 2/Packages/User/Terminal.sublime-settings",
+		"/Users/jeffblagdon/Developer/MyFlaskTutorial/templates/userinfo_lulu.html",
+		"/Users/jeffblagdon/Developer/MyFlaskTutorial/templates/end_lulu.html",
+		"/Users/jeffblagdon/Developer/tests/weekday_test.py",
+		"/Users/jeffblagdon/Developer/MyFlaskTutorial/Jeff Blagdon_34",
+		"/Users/jeffblagdon/Developer/MyFlaskTutorial/templates/userinfo.html",
+		"/Users/jeffblagdon/Developer/tests/derp.html",
+		"/Users/jeffblagdon/Developer/tests/prettified.html",
+		"/Users/jeffblagdon/Library/Application Support/Sublime Text 2/Packages/User/Default (OSX).sublime-keymap",
+		"/Users/jeffblagdon/Developer/tests/<?xml version=\"1.0\" encoding=\"utf-8\"?><root xmlns=.xml",
+		"/Users/jeffblagdon/Developer/tests/cmdtest.py",
+		"/Users/jeffblagdon/Developer/tests/simpletest.py",
+		"/Users/jeffblagdon/Developer/tests/whatever.xml",
+		"/Users/jeffblagdon/Developer/tests/xmltest.py",
+		"/Users/jeffblagdon/Desktop/play.html",
+		"/Users/jeffblagdon/Library/Application Support/Sublime Text 2/Packages/SublimeLinter/SublimeLinter.sublime-settings",
+		"/Users/jeffblagdon/Developer/snappy/dependencies.txt",
+		"/Users/jeffblagdon/Library/Application Support/Sublime Text 2/Packages/User/SublimeLinter.sublime-settings",
+		"/Users/jeffblagdon/Developer/tests/test.py",
+		"/Users/jeffblagdon/Developer/snappy/ssdp/upnptest.py",
+		"/Users/jeffblagdon/snappy/snappy.py",
+		"/Users/jeffblagdon/fizz/fizz.py",
+		"/Users/jeffblagdon/fizz/.git/COMMIT_EDITMSG",
+		"/Users/jeffblagdon/.gitconfig",
+		"/Users/jeffblagdon/fizz/.gitconfig",
+		"/Users/jeffblagdon/.bash_profile",
+		"/Users/jeffblagdon/Desktop/motorola_dvx.md",
+		"/Users/jeffblagdon/Desktop/photoshop_elements.md",
+		"/Users/jeffblagdon/Desktop/aereo_testing.md",
+		"/Users/jeffblagdon/Desktop/code/flaming-robot/CameraTest.py",
+		"/Users/jeffblagdon/Desktop/myasics.md",
+		"/Users/jeffblagdon/Desktop/asics.md",
+		"/Users/jeffblagdon/Desktop/playstation_app.md",
+		"/Users/jeffblagdon/Desktop/headset.md",
+		"/Users/jeffblagdon/Desktop/dreamliner.md",
+		"/Users/jeffblagdon/Desktop/youtube_cached.md",
+		"/Users/jeffblagdon/Desktop/iphone_teardown.md",
+		"/Users/jeffblagdon/Desktop/translate_handwriting.md",
+		"/Users/jeffblagdon/Desktop/rsa.md",
+		"/Users/jeffblagdon/Dropbox/weibo.md",
+		"/Users/jeffblagdon/Desktop/seahawks.md",
+		"/Users/jeffblagdon/Desktop/gm_tesla.md",
+		"/Users/jeffblagdon/Desktop/coding.md",
+		"/Users/jeffblagdon/Desktop/aziz.md",
+		"/Users/jeffblagdon/Desktop/motox_verizon.md",
+		"/Users/jeffblagdon/Desktop/skype_3d.md",
+		"/Users/jeffblagdon/Desktop/keyboard.md",
+		"/Users/jeffblagdon/Desktop/hugo_barra.md",
+		"/Users/jeffblagdon/Desktop/fukushima_satellite.md",
+		"/Users/jeffblagdon/Desktop/transparent_speaker.md",
+		"/Users/jeffblagdon/Desktop/helpouts.md",
+		"/Users/jeffblagdon/Desktop/telecom_wsj.md",
+		"/Users/jeffblagdon/Desktop/hacker_supercomputer.md",
+		"/Users/jeffblagdon/Desktop/htc_os.md",
+		"/Users/jeffblagdon/Desktop/amazon_tax.md"
+	],
+	"find":
+	{
+		"height": 35.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"pudb",
+			"get_len",
+			"pudb",
+			"pdb",
+			"0",
+			"pudb",
+			"filename",
+			"readchar",
+			"tparse",
+			"self",
+			".",
+			"self",
+			"self)",
+			"file_str",
+			"pudb",
+			"get_len",
+			"pudb",
+			"infile",
+			"pudb",
+			"get_",
+			"return",
+			"pudb",
+			"key_str",
+			"build",
+			"build_dict",
+			"index",
+			"main",
+			"##",
+			"route",
+			"render_templa",
+			"some",
+			"caret",
+			"cursor",
+			"name",
+			"print",
+			"ans",
+			"80",
+			"name",
+			"wri",
+			"column",
+			"line",
+			"wrap",
+			"static",
+			"urlstatic",
+			"url",
+			"side",
+			"folder",
+			"main",
+			"command_dict",
+			"url",
+			"print",
+			"snappy",
+			"snappypro",
+			"geturl",
+			"getservices",
+			"urll",
+			"decod",
+			"print",
+			"None",
+			"none",
+			"url",
+			"av",
+			"actionList",
+			"x_scalar",
+			"scalar",
+			"imple",
+			"e-ink",
+			"low",
+			"ongoi",
+			"gamest",
+			"spring",
+			"congressional",
+			"context",
+			".000",
+			"i",
+			"filemaker",
+			",",
+			"cable",
+			"set",
+			"nokia",
+			"jeff",
+			"chromo",
+			"span",
+			"<a",
+			"for",
+			"newAn",
+			"tk",
+			"v",
+			" \n",
+			"and≈",
+			"australi",
+			"Bitfloor",
+			"Bitfloor\n",
+			"ad",
+			"est",
+			"and",
+			"agre",
+			"smith",
+			"[Ss]mart watch",
+			"Pycon",
+			"We believe that a thorough investigation... into AUSA Heymann's professional conduct in the course of prosecuting the case against Aaron Swartz is appropriate.",
+			"melt",
+			"indent",
+			"discov",
+			"finding",
+			"powerful",
+			"trees",
+			"\n",
+			"tb",
+			"wikipedia",
+			"theverge",
+			"a",
+			"()])",
+			"jeff",
+			"Herio",
+			"Nasdaq",
+			"NASDAQ",
+			"Nasdaq",
+			"NASDAQ",
+			"Nasdaq",
+			"NASDAQ",
+			"Nasdaq",
+			"NASDAQ",
+			"Nasdaq",
+			"NASDAQ",
+			"Nasdaq",
+			"NASDAQ",
+			"Nasdaq"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 34.0
+	},
+	"input":
+	{
+		"height": 31.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 133.0
+	},
+	"replace":
+	{
+		"height": 0.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+			[
+				"end",
+				"templates/end_lulu.html"
+			],
+			[
+				"end_lu",
+				"templates/end_lulu.html"
+			],
+			[
+				"user",
+				"templates/userinfo.html"
+			],
+			[
+				"style",
+				"static/style_lulu.css"
+			],
+			[
+				"app",
+				"app.yaml"
+			],
+			[
+				"hel",
+				"helloworld.py"
+			],
+			[
+				"simpio",
+				"simpio.h"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"selected_items":
+		[
+		],
+		"width": 380.0
+	},
+	"show_minimap": true,
+	"show_open_files": true,
+	"show_tabs": true,
+	"side_bar_visible": false,
+	"side_bar_width": 132.0,
+	"status_bar_visible": true
+}
