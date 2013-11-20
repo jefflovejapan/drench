@@ -78,12 +78,11 @@ class WebSocket(protocol.Protocol):
     @classmethod
     def add_socket(self, ws):
         print 'adding a websocket'
-        self.websockets.append(ws)
-        pudb.set_trace()
+        WebSocket.websockets.append(ws)
 
     @classmethod
     def broadcast(self, message):
-        for ws in self.websockets:
+        for ws in WebSocket.websockets:
             ws.transport.write(message)
 
     def dataReceived(self, data):
