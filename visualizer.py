@@ -91,6 +91,7 @@ class WebSocket(protocol.Protocol):
 
 class MyWSFactory(protocol.Factory):
     def buildProtocol(self, addr):
+        pudb.set_trace()
         print 'building a WebSocket object'
         ws = WebSocket()
         WebSocket.add_socket(ws)
