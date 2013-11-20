@@ -47,7 +47,6 @@ class Torrent(object):
         self.tracker_response = None
         self.peer_dict = {}
         self.hash_string = None
-        # Visualizer lives here but switchboard has a ref
         self.vis_sock = ''
         self.queued_requests = []
         self.reactor = reactor.Reactor()

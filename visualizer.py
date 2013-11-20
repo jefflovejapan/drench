@@ -1,5 +1,8 @@
+import os
 import txws
+import socket
 from collections import namedtuple
+from bitarray import bitarray
 from twisted.web import http
 from twisted.internet import protocol, reactor
 import pudb
@@ -8,35 +11,36 @@ import pudb
 download_file = namedtuple('download_file', 'path bits')
 
 
-# TODO - maybe get rid of this. Although, need some way to initialize state
 def init_state(t_dict):
-    pass
-# state_dict = {}
-# if 'files' in t_dict['info']:
-#     state_dict['files'] = [download_file(path=os.path.join(*afile['path']),
-#                                          bits=bitarray('0' *
-#                                                        afile['length']))
-#                            for afile in t_dict['info']['files']]
-# elif 'name' in t_dict['info']:
-#     state_dict['files'] = [download_file(path=t_dict['info']['name'],
-#                                          bits=bitarray('0' *
-#                                                        t_dict['info']
-#                                                              ['length']))]
-# else:
-#     state_dict['files'] = []
-# for some_file in state_dict['files']:
-#     print some_file.path, len(some_file.bits)
-# print '\n\n'
+    state_dict = {}
+    if 'files' in t_dict['info']:
+        state_dict['files'] = [download_file(path=os.path.join(*afile['path']),
+                                             bits=bitarray('0' *
+                                                           afile['length']))
+                               for afile in t_dict['info']['files']]
+    elif 'name' in t_dict['info']:
+        state_dict['files'] = [download_file(path=t_dict['info']['name'],
+                                             bits=bitarray('0' *
+                                                           t_dict['info']
+                                                                 ['length']))]
+    else:
+        state_dict['files'] = []
+    for some_file in state_dict['files']:
+        print some_file.path, len(some_file.bits)
+    print '\n\n'
+    return state_dict
 
 
 class Visualizer(object):
+
     def __init__(self, t_dict={}):
         init_state(t_dict)
-        self.sock = None
+        self.sock = socket.socket()
+        self.sock.connect('localhost', 7000)
 
     def visualize(self, data):
         if self.sock:
-            WebSocket.broadcast(data + '\n')
+            self.outfile.write(data + '\n')
 
     def close(self):
         self.outfile.close()
@@ -46,7 +50,7 @@ class Visualizer(object):
 
 
 class MyRequestHandler(http.Request):
-    print 'handling a request'
+
     resources = {
         '/': '''<script>{}</script>
                 <h1>O hai</h1>'''.format(open('client.js').read())
@@ -95,10 +99,11 @@ class WebSocket(protocol.Protocol):
 
 class MyWSFactory(protocol.Factory):
     def buildProtocol(self, addr):
-        print 'building a whatever'
+        print 'building a WebSocket object'
         ws = WebSocket()
         WebSocket.add_socket(ws)
         return ws
+
 
 myVisualizer = Visualizer()
 reactor.listenTCP(8000, MyHTTPFactory())
