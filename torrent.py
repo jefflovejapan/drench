@@ -7,14 +7,13 @@ import reactor
 import peer
 import time
 import pudb
-from visualizer import Visualizer
 from listener import Listener
 from switchboard import Switchboard
 
 
 class PeerListener(Listener):
     def __init__(self, address='127.0.0.1',
-                 port=8000, torrent=None):
+                 port=8035, torrent=None):
         Listener.__init__(self, address, port)
         self.torrent = torrent
 
@@ -28,11 +27,12 @@ class VisListener(Listener):
     def __init__(self, address='127.0.0.1',
                  port=7000, torrent=None):
         Listener.__init__(self, address, port)
+        assert torrent
         self.torrent = torrent
 
     def read(self):
         newsock, _ = self.sock.accept()
-        self.torrent.visualizer.set_sock(newsock)
+        self.vis_sock = newsock
 
 
 class Torrent(object):
@@ -48,18 +48,17 @@ class Torrent(object):
         self.peer_dict = {}
         self.hash_string = None
         # Visualizer lives here but switchboard has a ref
-        self.visualizer = Visualizer(self.torrent_dict,
-                                     address=self.sock.getsockname())
+        self.vis_sock = ''
         self.queued_requests = []
         self.reactor = reactor.Reactor()
         self.reactor.add_listeners([PeerListener(torrent=self, port=7000),
-                                    VisListener(torrent=self, port=8000)])
+                                    VisListener(torrent=self, port=8035)])
         self.switchboard = Switchboard(dirname=self.torrent_dict['info']
                                        ['name'], file_list=self.torrent_dict
                                        ['info']['files'], piece_length=
                                        self.piece_length, num_pieces=
-                                       self.num_pieces, visualizer=
-                                       self.visualizer)
+                                       self.num_pieces, vis_sock=
+                                       self.vis_sock)
 
     @property
     def piece_length(self):

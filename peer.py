@@ -273,7 +273,10 @@ class Peer(object):
                         'peer': self.sock.getpeername(),
                         'piece': self.next_request}
         request_json = json.dumps(request_dict)
+        try:
+            self.torrent.switchboard.vis_sock.send(request_json)
+        except:
+            print 'no vis_sock'
         print 'next request:', request_json
-        self.torrent.visualizer.visualize(request_json)
         if bytes != len(packet):
             raise Exception('couldnt send request')
