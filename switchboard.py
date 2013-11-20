@@ -147,8 +147,7 @@ def build_bitfield(heads_and_tails=[], num_pieces=0):
 
 
 class Switchboard(object):
-    def __init__(self, dirname='', file_list=[], piece_length=0, num_pieces=0,
-                 vis_sock=''):
+    def __init__(self, dirname='', file_list=[], piece_length=0, num_pieces=0):
         self.dirname = dirname
         self.file_list = copy.deepcopy(file_list)
         self.piece_length = piece_length
@@ -158,7 +157,7 @@ class Switchboard(object):
         self.outfiles = []
         self.byte_index = 0
         self.block = ''
-        self.vis_sock = vis_sock
+        self.vis_sock = None
         os.mkdir(self.dirname)
         os.chdir(os.path.join(os.getcwd(), self.dirname))
         want_files = [self.file_list[index] for index in self.want_file_pos]
@@ -208,6 +207,10 @@ class Switchboard(object):
 
     def set_block(self, block):
         self.block = block
+
+    def set_sock(self, sock):
+        self.vis_sock = sock
+        self.switchboard.vis_sock = sock
 
     def write(self):
         write_file = self.get_next_want_file()

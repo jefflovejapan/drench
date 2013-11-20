@@ -32,7 +32,7 @@ class VisListener(Listener):
 
     def read(self):
         newsock, _ = self.sock.accept()
-        self.vis_sock = newsock
+        self.torrent.set_sock(newsock)
 
 
 class Torrent(object):
@@ -47,8 +47,8 @@ class Torrent(object):
         self.tracker_response = None
         self.peer_dict = {}
         self.hash_string = None
-        self.vis_sock = ''
         self.queued_requests = []
+        self.vis_sock = ''
         self.reactor = reactor.Reactor()
         self.reactor.add_listeners([PeerListener(torrent=self, port=7000),
                                     VisListener(torrent=self, port=8035)])
@@ -56,8 +56,7 @@ class Torrent(object):
                                        ['name'], file_list=self.torrent_dict
                                        ['info']['files'], piece_length=
                                        self.piece_length, num_pieces=
-                                       self.num_pieces, vis_sock=
-                                       self.vis_sock)
+                                       self.num_pieces)
 
     @property
     def piece_length(self):
@@ -204,6 +203,10 @@ class Torrent(object):
         thispeer = self.peer_dict.pop(tpeer.sock)
         print 'peer with fileno {} killing itself'.format(thispeer.fileno())
         self.reactor.select_list.remove(thispeer)
+
+    def set_sock(self, sock):
+        self.vis_sock = sock
+        self.switchboard.vis_sock = self.vis_sock
 
 
 def main():

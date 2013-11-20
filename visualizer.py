@@ -1,8 +1,7 @@
 import txws
-import socket
 from collections import namedtuple
 from twisted.web import http
-from twisted.internet import protocol, reactor
+from twisted.internet import protocol, reactor, endpoints
 import pudb
 
 
@@ -29,23 +28,19 @@ def init_state(t_dict):
 # print '\n\n'
 # return state_dict
 
+#
 
-class Visualizer(object):
 
-    def __init__(self, t_dict={}):
-        init_state(t_dict)
-        self.sock = socket.socket()
-        self.sock.connect(('localhost', 8035))
+class BitClient(protocol.Protocol):
+    '''
+    Responsible for grabbing TCP connection to BitTorrent client.
+    Gets callback on dataReceived initiating a broadcast to all
+    websockets
+    '''
 
-    def visualize(self, data):
-        if self.sock:
-            self.outfile.write(data + '\n')
-
-    def close(self):
-        self.outfile.close()
-
-    def set_sock(self, sock):
-        self.sock = sock
+    def dataReceived(self, data):
+        print data
+        WebSocket.broadcast(data)
 
 
 class MyRequestHandler(http.Request):
@@ -65,9 +60,6 @@ class MyRequestHandler(http.Request):
                                  'Sorry, dogg. We dont have those here')
         self.finish()
 
-# Need to create our own protocol -- LineReceiver isn't generic enough
-# (or is it too generic?)
-
 
 class MyHTTP(http.HTTPChannel):
     print 'MyHTTP initialized'
@@ -85,7 +77,9 @@ class WebSocket(protocol.Protocol):
 
     @classmethod
     def add_socket(self, ws):
+        print 'adding a websocket'
         self.websockets.append(ws)
+        pudb.set_trace()
 
     @classmethod
     def broadcast(self, message):
@@ -93,7 +87,7 @@ class WebSocket(protocol.Protocol):
             ws.transport.write(message)
 
     def dataReceived(self, data):
-        pass
+        print data
 
 
 class MyWSFactory(protocol.Factory):
@@ -101,10 +95,12 @@ class MyWSFactory(protocol.Factory):
         print 'building a WebSocket object'
         ws = WebSocket()
         WebSocket.add_socket(ws)
+        print WebSocket.websockets
         return ws
 
-
-myVisualizer = Visualizer()
+point = endpoints.TCP4ClientEndpoint(reactor, "127.0.0.1", 8035)
+bit_client = BitClient()
+d = endpoints.connectProtocol(point, bit_client)
 reactor.listenTCP(8000, MyHTTPFactory())
 reactor.listenTCP(8001, txws.WebSocketFactory(MyWSFactory()))
 reactor.run()
