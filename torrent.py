@@ -13,7 +13,7 @@ from switchboard import Switchboard
 
 class PeerListener(Listener):
     def __init__(self, address='127.0.0.1',
-                 port=8035, torrent=None):
+                 port=7000, torrent=None):
         Listener.__init__(self, address, port)
         self.torrent = torrent
 
@@ -25,7 +25,7 @@ class PeerListener(Listener):
 
 class VisListener(Listener):
     def __init__(self, address='127.0.0.1',
-                 port=7000, torrent=None):
+                 port=8035, torrent=None):
         Listener.__init__(self, address, port)
         assert torrent
         self.torrent = torrent
