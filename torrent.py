@@ -39,7 +39,7 @@ class VisListener(Listener):
 
         # Guarantees that no updates are sent before the init
         # (i.e., the state of the BTC at the time the visualizer connects)
-        self.torrent.switchboard.send_init()
+        self.torrent.switchboard.send_all_updates()
 
 
 class Torrent(object):

@@ -3,7 +3,6 @@ import bitarray
 import copy
 import json
 import pudb
-import time
 from collections import namedtuple
 
 start_end_pair = namedtuple('start_end_pair', 'start end')
@@ -158,6 +157,7 @@ class Switchboard(object):
         self.outfiles = []
         self.byte_index = 0
         self.block = ''
+        self.queued_messages = []
         self.vis_write_sock = None
         os.mkdir(self.dirname)
         os.chdir(os.path.join(os.getcwd(), self.dirname))
@@ -174,7 +174,7 @@ class Switchboard(object):
                                                piece_length=self.piece_length)
         self.bitfield = build_bitfield(self.heads_and_tails,
                                        num_pieces=self.num_pieces)
-        pass
+        self.vis_init()
 
     def get_next_want_file(self):
         '''
@@ -219,10 +219,6 @@ class Switchboard(object):
 
     def write(self):
 
-        write_dict = {'kind': 'write', 'piece': self.piece_index}
-        write_json = json.dumps(write_dict)
-        self.try_visualize(write_json)
-
         self.seek(self.piece_index * self.piece_length)
         next_want_file = self.get_next_want_file()
         assert next_want_file
@@ -251,9 +247,6 @@ class Switchboard(object):
         # If we can't write the entire block
         if bytes_writable < len(self.block):
 
-            # pudb.set_trace()
-            self.try_visualize(write_json)
-
             write_obj.write(self.block[:bytes_writable])
             self.block = self.block[bytes_writable:]
             self.byte_index = self.byte_index + bytes_writable
@@ -272,7 +265,7 @@ class Switchboard(object):
             write_obj.write(self.block)
             self.block = ''
 
-    def send_init(self):
+    def vis_init(self):
         '''
         Sends the state of the BTC at the time the visualizer connects,
         initializing it.
@@ -284,22 +277,23 @@ class Switchboard(object):
         init_dict['files'] = self.file_list
         init_dict['heads_and_tails'] = self.heads_and_tails
         init_dict['num_pieces'] = self.num_pieces
-        init_dict['bitfield'] = self.bitfield.to01()
-        init_json = json.dumps(init_dict)
-        assert self.try_visualize(init_json)
+        self.try_visualize(init_dict)
 
-    def try_visualize(self, data):
+    def try_visualize(self, data_dict):
         '''
         Send to the visualizer (if there is one) or enqueue for later
         '''
-
         try:
-            self.vis_write_sock.send(data)
-            return True
+            self.vis_write_sock.send(json.dumps(data_dict))
         except:
-            print 'No visualizer, dumping data' + '\n' + data
-            time.sleep(2)
-            return False
+            self.queued_messages.append(data_dict)
+
+    def send_all_updates(self):
+        assert self.vis_write_sock
+        while self.queued_messages:
+            # TODO -- ask if this makes sense
+            next_message = json.dumps(self.queued_messages.pop(0)) + '\r\n'
+            self.vis_write_sock.send(next_message)
 
     def mark_off(self, index):
         self.bitfield[index] = False

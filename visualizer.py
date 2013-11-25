@@ -1,5 +1,4 @@
 import txws
-from Queue import Queue
 from collections import namedtuple
 from twisted.web import http
 from twisted.internet import protocol, reactor, endpoints
@@ -14,8 +13,7 @@ def init_state(t_dict):
 
 
 class BitClient(protocol.Protocol):
-    def __init__(self):
-        self.data_queue = Queue()
+    data_queue = []
     '''
     Responsible for grabbing TCP connection to BitTorrent client.
     Gets callback on dataReceived initiating a broadcast to all
@@ -23,11 +21,10 @@ class BitClient(protocol.Protocol):
     '''
     def dataReceived(self, data):
         print 'received some data:' + '\n\t' + data
-        self.data_queue.put(data)
+        self.data_queue.append(data)
         # pudb.set_trace()
         if WebSocket.websockets:
-            while not self.data_queue.empty():
-                WebSocket.broadcast(self.data_queue.get())
+            WebSocket.broadcast(data)
 
 
 class MyRequestHandler(http.Request):
@@ -76,11 +73,15 @@ class WebSocket(protocol.Protocol):
     def dataReceived(self, data):
         print data
 
+    # def send_all_messages(self):
+    #     self.transport.write('barf' * 1000)
+
 
 class MyWSFactory(protocol.Factory):
     def buildProtocol(self, addr):
         print 'building a WebSocket object'
         ws = WebSocket()
+        # ws.send_all_messages()
         WebSocket.add_socket(ws)
         print WebSocket.websockets
         return ws
