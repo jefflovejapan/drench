@@ -219,7 +219,7 @@ class Switchboard(object):
 
     def write(self):
 
-        write_dict = {'kind': 'write', 'index': self.piece_index}
+        write_dict = {'kind': 'write', 'piece': self.piece_index}
         write_json = json.dumps(write_dict)
         self.try_visualize(write_json)
 
@@ -282,7 +282,7 @@ class Switchboard(object):
         assert len(self.want_file_pos) == len(self.heads_and_tails)
         init_dict['want_file_pos'] = self.want_file_pos
         init_dict['files'] = self.file_list
-        init_dict['heads_tails'] = self.heads_and_tails
+        init_dict['heads_and_tails'] = self.heads_and_tails
         init_dict['num_pieces'] = self.num_pieces
         init_dict['bitfield'] = self.bitfield.to01()
         init_json = json.dumps(init_dict)

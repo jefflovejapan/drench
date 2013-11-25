@@ -3,55 +3,61 @@
 (function(){
                 window.THEWEBSOCKET = new WebSocket("ws://blagdons-macbook-air-2.local:8001");
                 window.THEWEBSOCKET.onopen = function () {console.log("we in here") };
+
+                var files = {};
+                var want_file_pos = [];
+
+                var build_model = function (init_dict) {
+                    want_file_pos = init_dict["want_file_pos"]
+                    want_file_pos.forEach( function(file_pos) {
+                        files[file_pos] = {};
+                        var head_and_tail = init_dict["heads_and_tails"][file_pos];
+                        files[file_pos]["bitfield"] = '';
+                        for (var j = head_and_tail[0]; j <= head_and_tail[1]; j++) {
+                            files[file_pos]["bitfield"] = files[file_pos]["bitfield"] +
+                                                   init_dict["bitfield"][j];
+                        }
+                        files[file_pos]["path"] = init_dict["files"][file_pos]["path"];
+                        files[file_pos]["relevant"] = [];
+                        for (var j = head_and_tail[0]; j <= head_and_tail[1]; j++) {
+                            files[file_pos]["relevant"].push(j);
+                        }
+                    });
+                }
+
+                var vis_request = function (req_dict) {
+                    console.log(req_dict);
+                }
+
+                var vis_write = function (write_dict) {
+                    console.log(write_dict);
+                    var piece_index = write_dict["piece"];
+                    // Want to find which files care about piece_index
+                    files.forEach( function (afile) {
+                        var internal_index = afile["relevant"].indexOf(piece_index);
+                        console.log(internal_index);
+                        if ( internal_index !== -1) {
+                            afile["bitfield"][internal_index] = 0;
+                            // TODO -- add transition code here
+                            console.log(afile["bitfield"]);
+                        }
+                    }
+                }
+
                 window.THEWEBSOCKET.onmessage = function (message) {
-
-                    var files = {}
-
-
-
-                    var data = JSON.parse(message.data)
-                    if (data["kind"] === "init") {
-                        build_model(data);
-                    } else if (data["kind"] === "request") {
-                        vis_request(data);
-                    } else if (data["kind"] === "write") {
-                        vis_write(data);
+                    var meat = JSON.parse(message.data);
+                    if (meat["kind"] === "init") {
+                        build_model(meat);
+                    } else if (meat["kind"] === "request") {
+                        vis_request(meat);
+                    } else if (meat["kind"] === "write") {
+                        vis_write(meat);
                     } else {
                         throw "Data kind invalid"
                     }
-
-                    var build_model = function (init_dict) {
-                        for (i in init_dict["want_file_pos"]) {
-                            files[i] = {};
-                            var head_and_tail = init_dict["heads_and_tails"][i];
-                            files[i]["bitfield"] = init_dict["bitfield"]
-                                                   [head_and_tail[0]:
-                                                    head_and_tail[1] + 1];
-                            files[i]["path"] = init_dict["files"][i]["path"];
-                            files[i]["relevant"] = [];
-                            for (var j = head_and_tail[0]; j <= head_and_tail[1]; j++) {
-                                files[i]["relevant"].push(j);
-                            }
-                        }
-                    }
-
-                    var vis_request = function (req_dict) {
-                        console.log(req_dict);
-                    }
-
-                    var vis_write = function (write_dict) {
-                        var index = write_dict["piece_index"];
-                        for (var file in files) {
-                            var internal_index = file["relevant"].indexOf(index);
-                            if ( internal_index !== -1) {
-                                file["bitfield"][internal_index] = 0;
-                                // TODO -- add transition code here
-                                console.log(file["bitfield"]);
-                            }
-                        }
-                    }
-
                     var h = document.getElementsByTagName('h1')[0];
-                    h.innerHTML = data["kind"]};
+                    h.innerHTML = meat["kind"];
+                }
+
                 document.onclick = function () { window.THEWEBSOCKET.send('o hai there') };
-          }())
+}) ();
