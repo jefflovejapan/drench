@@ -195,9 +195,7 @@ class Peer(object):
             print ('writing piece {}. Length is '
                    '{}').format(repr(block)[:10] + '...', len(block))
 
-            # Tell switchboard how far to advance in the overall byte order
-            self.torrent.switchboard.seek(piece_index *
-                                          self.torrent.piece_length)
+            self.torrent.switchboard.set_piece_index(piece_index)
             self.torrent.switchboard.set_block(block)
             self.torrent.switchboard.write()
             self.torrent.switchboard.mark_off(piece_index)
@@ -273,10 +271,8 @@ class Peer(object):
                         'peer': self.sock.getpeername(),
                         'piece': self.next_request}
         request_json = json.dumps(request_dict)
-        try:
-            self.torrent.switchboard.vis_sock.send(request_json)
-        except:
-            print 'no vis_sock'
+        # pudb.set_trace()
+        self.torrent.switchboard.try_visualize(request_json)
         print 'next request:', request_json
         if bytes != len(packet):
             raise Exception('couldnt send request')

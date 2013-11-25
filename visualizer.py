@@ -1,4 +1,5 @@
 import txws
+from Queue import Queue
 from collections import namedtuple
 from twisted.web import http
 from twisted.internet import protocol, reactor, endpoints
@@ -10,44 +11,31 @@ download_file = namedtuple('download_file', 'path bits')
 
 def init_state(t_dict):
     pass
-# state_dict = {}
-# if 'files' in t_dict['info']:
-#     state_dict['files'] = [download_file(path=os.path.join(*afile['path']),
-#                                          bits=bitarray('0' *
-#                                                        afile['length']))
-#                            for afile in t_dict['info']['files']]
-# elif 'name' in t_dict['info']:
-#     state_dict['files'] = [download_file(path=t_dict['info']['name'],
-#                                          bits=bitarray('0' *
-#                                                        t_dict['info']
-#                                                              ['length']))]
-# else:
-#     state_dict['files'] = []
-# for some_file in state_dict['files']:
-#     print some_file.path, len(some_file.bits)
-# print '\n\n'
-# return state_dict
-
-#
 
 
 class BitClient(protocol.Protocol):
+    def __init__(self):
+        self.data_queue = Queue()
     '''
     Responsible for grabbing TCP connection to BitTorrent client.
     Gets callback on dataReceived initiating a broadcast to all
     websockets
     '''
-
     def dataReceived(self, data):
-        print data
-        WebSocket.broadcast(data)
+        print 'received some data:' + '\n\t' + data
+        self.data_queue.put(data)
+        # pudb.set_trace()
+        if WebSocket.websockets:
+            while not self.data_queue.empty():
+                WebSocket.broadcast(self.data_queue.get())
 
 
 class MyRequestHandler(http.Request):
     script = open('client.js').read()
     resources = {
-        '/': '''<script>{}</script>
-                <h1>O hai</h1>'''.format(script)
+        '/': '''<script src="http://d3js.org/d3.v3.js" charset="utf-8">
+                    </script>
+                <script>{}</script><h1>O hai</h1>'''.format(script)
     }
 
     def process(self):
@@ -68,8 +56,8 @@ class MyHTTP(http.HTTPChannel):
 
 class MyHTTPFactory(http.HTTPFactory):
     def buildProtocol(self, addr):
-        http = MyHTTP()
-        return http
+        http_protocol = MyHTTP()
+        return http_protocol
 
 
 class WebSocket(protocol.Protocol):
@@ -91,7 +79,6 @@ class WebSocket(protocol.Protocol):
 
 class MyWSFactory(protocol.Factory):
     def buildProtocol(self, addr):
-        pudb.set_trace()
         print 'building a WebSocket object'
         ws = WebSocket()
         WebSocket.add_socket(ws)

@@ -33,6 +33,13 @@ class VisListener(Listener):
     def read(self):
         newsock, _ = self.sock.accept()
         self.torrent.set_sock(newsock)
+        assert self.torrent.vis_write_sock
+        assert (self.torrent.vis_write_sock is
+                self.torrent.switchboard.vis_write_sock)
+
+        # Guarantees that no updates are sent before the init
+        # (i.e., the state of the BTC at the time the visualizer connects)
+        self.torrent.switchboard.send_init()
 
 
 class Torrent(object):
@@ -48,7 +55,7 @@ class Torrent(object):
         self.peer_dict = {}
         self.hash_string = None
         self.queued_requests = []
-        self.vis_sock = ''
+        self.vis_write_sock = ''
         self.reactor = reactor.Reactor()
         self.reactor.add_listeners([PeerListener(torrent=self, port=7000),
                                     VisListener(torrent=self, port=8035)])
@@ -205,8 +212,8 @@ class Torrent(object):
         self.reactor.select_list.remove(thispeer)
 
     def set_sock(self, sock):
-        self.vis_sock = sock
-        self.switchboard.vis_sock = self.vis_sock
+        self.vis_write_sock = sock
+        self.switchboard.vis_write_sock = self.vis_write_sock
 
 
 def main():
