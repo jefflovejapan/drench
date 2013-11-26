@@ -2,10 +2,6 @@
 
 (function(){
                 window.THEWEBSOCKET = new WebSocket("ws://blagdons-macbook-air-2.local:8001");
-                window.THEWEBSOCKET.onopen = function () {
-                    console.log("we in here");
-                    window.THEWEBSOCKET.send(JSON.stringify({"kind": "init"}));
-                };
 
                 var files = {};
                 var want_file_pos = [];

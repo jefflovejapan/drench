@@ -1,5 +1,6 @@
 import txws
 import json
+from Queue import Queue
 from collections import namedtuple
 from twisted.web import http
 from twisted.internet import protocol, reactor, endpoints
@@ -14,7 +15,7 @@ def init_state(t_dict):
 
 
 class BitClient(protocol.Protocol):
-    message_queue = []
+    message_list = []
     '''
     Responsible for grabbing TCP connection to BitTorrent client.
     Gets callback on dataReceived initiating a broadcast to all
@@ -22,7 +23,7 @@ class BitClient(protocol.Protocol):
     '''
     def dataReceived(self, data):
         print 'received some data:' + '\n\t' + data
-        self.message_queue.append(data)
+        self.message_list.append(data)
         if WebSocket.websockets:
             WebSocket.broadcast(data)
 
@@ -57,6 +58,8 @@ class MyHTTPFactory(http.HTTPFactory):
         return http_protocol
 
 
+# TODO -- make a new queue for each client
+
 class WebSocket(protocol.Protocol):
     websockets = []
 
@@ -68,25 +71,19 @@ class WebSocket(protocol.Protocol):
     @classmethod
     def broadcast(self, message):
         for ws in WebSocket.websockets:
-            ws.transport.write(message)
+            ws.message_queue.put(message)
+            ws.send_all_messages()
 
-    def dataReceived(self, message):
-        print 'MESSAGE FROM WEBSOCKET:', message
-        self.handle_message(json.loads(message))
-
-    def handle_message(self, message_dict):
-        if message_dict['kind'] == 'init':
-            self.send_all_messages()
-        else:
-            raise Exception('What the fuck')
+    def connectionMade(self):
+        self.message_queue = Queue()
+        for i in range(len(BitClient.message_list)):
+            self.message_queue.put(BitClient.message_list[i])
+        self.send_all_messages()
 
     def send_all_messages(self):
         print 'SENDING ALL MESSAGES'
-        for i in range(len(BitClient.message_queue)):
-            try:
-                self.transport.write(BitClient.message_queue[i])
-            except:
-                raise Exception("Can't write to websocket transport")
+        while not self.message_queue.empty():
+                self.transport.write(self.message_queue.get())
 
 
 class MyWSFactory(protocol.Factory):
