@@ -1,10 +1,9 @@
 import txws
-import json
+import pudb
 from Queue import Queue
 from collections import namedtuple
 from twisted.web import http
 from twisted.internet import protocol, reactor, endpoints
-import pudb
 
 
 download_file = namedtuple('download_file', 'path bits')
@@ -79,6 +78,10 @@ class WebSocket(protocol.Protocol):
         for i in range(len(BitClient.message_list)):
             self.message_queue.put(BitClient.message_list[i])
         self.send_all_messages()
+
+    def connectionLost(self, reason):
+        print 'connection lost for', self
+        WebSocket.websockets.remove(self)
 
     def send_all_messages(self):
         print 'SENDING ALL MESSAGES'

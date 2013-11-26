@@ -2,6 +2,7 @@
 
 (function(){
                 window.THEWEBSOCKET = new WebSocket("ws://blagdons-macbook-air-2.local:8001");
+                window.onbeforeunload = function () { window.THEWEBSOCKET.close(); };
 
                 var files = {};
                 var want_file_pos = [];
@@ -11,15 +12,6 @@
                     want_file_pos.forEach( function(file_pos, i) {
                         files[file_pos] = {};
                         var head_and_tail = init_dict["heads_and_tails"][i];
-                        files[file_pos]["bitfield"] = [];
-                        for (var j = head_and_tail[0]; j <= head_and_tail[1]; j++) {
-                            var next_digit = init_dict["bitfield"][j];
-                            if (next_digit === "1") {
-                                files[file_pos]["bitfield"].push(1);
-                            } else if (next_digit == "0") {
-                                files[file_pos]["bitfield"].push(0);
-                            }
-                        }
                         files[file_pos]["path"] = init_dict["files"][file_pos]["path"];
                         files[file_pos]["relevant"] = [];
                         for (var j = head_and_tail[0]; j <= head_and_tail[1]; j++) {
@@ -33,15 +25,14 @@
                 }
 
                 var vis_write = function (write_dict) {
-                    var piece_index = write_dict["piece"];
+                    var piece_index = write_dict["piece_index"];
                     // Want to find which files care about piece_index
                     for (file_index in files) {
                         var internal_index = files[file_index]["relevant"].indexOf(piece_index);
                         console.log(internal_index);
                         if ( internal_index !== -1) {
-                            files[file_index]["bitfield"][internal_index] = 0;
                             // TODO -- add transition code here
-                            console.log(files[file_index]["bitfield"]);
+                            console.log(files[file_index]["path"] + ' cares about ' + piece_index);
                         }
                     };
                 }
