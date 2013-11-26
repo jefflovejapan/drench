@@ -277,9 +277,9 @@ class Switchboard(object):
         init_dict['files'] = self.file_list
         init_dict['heads_and_tails'] = self.heads_and_tails
         init_dict['num_pieces'] = self.num_pieces
-        self.try_visualize(init_dict)
+        self.try_vis_handoff(init_dict)
 
-    def try_visualize(self, data_dict):
+    def try_vis_handoff(self, data_dict):
         '''
         Send to the visualizer (if there is one) or enqueue for later
         '''

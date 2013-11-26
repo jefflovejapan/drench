@@ -2,7 +2,10 @@
 
 (function(){
                 window.THEWEBSOCKET = new WebSocket("ws://blagdons-macbook-air-2.local:8001");
-                window.THEWEBSOCKET.onopen = function () {console.log("we in here") };
+                window.THEWEBSOCKET.onopen = function () {
+                    console.log("we in here");
+                    window.THEWEBSOCKET.send(JSON.stringify({"kind": "init"}));
+                };
 
                 var files = {};
                 var want_file_pos = [];
@@ -49,11 +52,12 @@
 
                 window.THEWEBSOCKET.onmessage = function (message) {
                     var meat = JSON.parse(message.data);
+                    console.log(meat["kind"]);
                     if (meat["kind"] === "init") {
                         build_model(meat);
                     } else if (meat["kind"] === "request") {
                         vis_request(meat);
-                    } else if (meat["kind"] === "write") {
+                    } else if (meat["kind"] === "piece") {
                         vis_write(meat);
                     } else {
                         throw "Data kind invalid";

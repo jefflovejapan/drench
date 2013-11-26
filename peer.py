@@ -187,7 +187,7 @@ class Peer(object):
         piece_index, block_begin = struct.unpack('!ii', content[0:8])
         piece_dict = {'kind': 'piece', 'peer': self.sock.getpeername(),
                       'piece_index': piece_index}
-        self.torrent.switchboard.try_visualize(piece_dict)
+        self.torrent.switchboard.try_vis_handoff(piece_dict)
         block = content[8:]
         if hashlib.sha1(block).digest() == (self.torrent.torrent_dict['info']
                                             ['pieces']
@@ -272,7 +272,7 @@ class Peer(object):
         request_dict = {'kind': 'request',
                         'peer': self.sock.getpeername(),
                         'piece': self.next_request}
-        self.torrent.switchboard.try_visualize(request_dict)
+        self.torrent.switchboard.try_vis_handoff(request_dict)
         print 'next request:', request_dict
         if bytes != len(packet):
             raise Exception('couldnt send request')

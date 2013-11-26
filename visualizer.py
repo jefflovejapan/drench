@@ -1,4 +1,5 @@
 import txws
+import json
 from collections import namedtuple
 from twisted.web import http
 from twisted.internet import protocol, reactor, endpoints
@@ -13,7 +14,7 @@ def init_state(t_dict):
 
 
 class BitClient(protocol.Protocol):
-    data_queue = []
+    message_queue = []
     '''
     Responsible for grabbing TCP connection to BitTorrent client.
     Gets callback on dataReceived initiating a broadcast to all
@@ -21,8 +22,7 @@ class BitClient(protocol.Protocol):
     '''
     def dataReceived(self, data):
         print 'received some data:' + '\n\t' + data
-        self.data_queue.append(data)
-        # pudb.set_trace()
+        self.message_queue.append(data)
         if WebSocket.websockets:
             WebSocket.broadcast(data)
 
@@ -70,18 +70,29 @@ class WebSocket(protocol.Protocol):
         for ws in WebSocket.websockets:
             ws.transport.write(message)
 
-    def dataReceived(self, data):
-        print data
+    def dataReceived(self, message):
+        print 'MESSAGE FROM WEBSOCKET:', message
+        self.handle_message(json.loads(message))
 
-    # def send_all_messages(self):
-    #     self.transport.write('barf' * 1000)
+    def handle_message(self, message_dict):
+        if message_dict['kind'] == 'init':
+            self.send_all_messages()
+        else:
+            raise Exception('What the fuck')
+
+    def send_all_messages(self):
+        print 'SENDING ALL MESSAGES'
+        for i in range(len(BitClient.message_queue)):
+            try:
+                self.transport.write(BitClient.message_queue[i])
+            except:
+                raise Exception("Can't write to websocket transport")
 
 
 class MyWSFactory(protocol.Factory):
     def buildProtocol(self, addr):
         print 'building a WebSocket object'
         ws = WebSocket()
-        # ws.send_all_messages()
         WebSocket.add_socket(ws)
         print WebSocket.websockets
         return ws
