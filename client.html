@@ -33,8 +33,6 @@
                          .domain([0, d3.max(files, function (d) { return d["relevant"].length} )])
                          .range([0, w]);
 
-        console.log("width: " + w, "height: "+ h);
-
         var svg = d3.select("body")
                     .append("svg")
                     .attr("width", w)
@@ -48,6 +46,16 @@
                          .attr("fill", "blue")
                          .attr("opacity", 0.2);
 
+        var texty = svg.selectAll("text")                      
+                       .data(files)
+                       .enter()
+                       .append("text")
+                       .text(function (d) { return d["path"].join('/'); })
+                       .attr("x", 50)
+                       .attr("y", function (d, i) { return (i*60) + 60; })
+                       .attr("text-size", 30)
+                       .attr("font", "sans-serif");
+
         var clientCircle = svg.append("circle")
                               .attr("cx", Math.floor(w/2))
                               .attr("cy", Math.floor(h/2))
@@ -57,16 +65,37 @@
                               .attr("stroke-width", 5)
                               .attr("opacity", 0.2);
 
-        var bars = svg.selectAll("rect")
+        var piece_bukcets = svg.selectAll("g.piece_bucket")
                       .data(files)
                       .enter()
+                      .append("g")
+                      .attr("class", "piece_bucket")
+                      .attr("id", function (d, i) { return ("piece_bucket" + i) })
                       .append("rect")
-                      .attr("y", function (d, i) { return (60 + i * 60); })
+                      .attr("y", function (d, i) { return (i * 60) + 60; })
+                      .attr("class", "bar")
                       .attr("x", 50)
-                      .attr("width", function (d) { return xScale(d["relevant"].length); })
+                      .attr("width", function (d) { 
+                        return xScale( d["relevant"].length);
+                      })
                       .attr("height", 20)
                       .attr("fill", "red")
-                      .attr("opacity", 0.2);
+                      .attr("opacity", 0.2)
+
+        var pieces = svg.selectAll("g.piece_bucket")
+                        .selectAll("rect.piece")
+                        .data( function (d) { return d["relevant"]; })
+                        .enter()
+                        .append("rect")
+                        .attr("class", "piece")
+                        .attr("id", function (d) { return ("piece" + d) })
+                        .attr("y", 30)
+                        .attr("x", function (d, i) { return i * 10; })
+                        .attr("height", 10)
+                        .attr("width", 10)
+                        .attr("fill", "black");
+ 
+                       
     }
 
     var vis_request = function (req_dict) {

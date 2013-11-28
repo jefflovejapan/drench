@@ -1,5 +1,4 @@
 import txws
-import pudb
 from Queue import Queue
 from collections import namedtuple
 from twisted.web import http
@@ -28,11 +27,9 @@ class BitClient(protocol.Protocol):
 
 
 class MyRequestHandler(http.Request):
-    script = open('client.js').read()
+    clientHTML = open('client.html').read()
     resources = {
-        '/': '''<script src="http://d3js.org/d3.v3.js" charset="utf-8">
-                    </script>
-                <script>{}</script><h1>O hai</h1>'''.format(script)
+        '/': clientHTML
     }
 
     def process(self):
@@ -56,8 +53,6 @@ class MyHTTPFactory(http.HTTPFactory):
         http_protocol = MyHTTP()
         return http_protocol
 
-
-# TODO -- make a new queue for each client
 
 class WebSocket(protocol.Protocol):
     websockets = []
