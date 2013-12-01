@@ -6,9 +6,22 @@ import argparse
 import reactor
 import peer
 import time
+import os
 import pudb
 from listener import Listener
 from switchboard import Switchboard
+
+DEFAULT_PORT = 55308
+DEFAULT_DIR = '~/Desktop'
+
+
+def get_path(file_path):
+    if file_path[0] == '.':
+        return os.path.abspath(file_path)
+    elif file_path[0] == '~':
+        return os.path.expanduser(file_path)
+    else:
+        return file_path
 
 
 class PeerListener(Listener):
@@ -44,7 +57,7 @@ class VisListener(Listener):
 
 class Torrent(object):
 
-    def __init__(self, torrent_path, port=55308):
+    def __init__(self, torrent_path, directory='', port=55308):
         torrent_dict = tparser.bdecode_file(torrent_path)
         self.torrent_dict = torrent_dict
         self.peer_dict = {}
@@ -59,8 +72,11 @@ class Torrent(object):
         self.reactor = reactor.Reactor()
         self.reactor.add_listeners([PeerListener(torrent=self, port=7000),
                                     VisListener(torrent=self, port=8035)])
-        self.switchboard = Switchboard(dirname=self.torrent_dict['info']
-                                       ['name'], file_list=self.torrent_dict
+        if directory:
+            os.chdir(directory)
+        dirname = self.torrent_dict['info']['name']
+        self.switchboard = Switchboard(dirname=dirname,
+                                       file_list=self.torrent_dict
                                        ['info']['files'], piece_length=
                                        self.piece_length, num_pieces=
                                        self.num_pieces)
@@ -215,17 +231,33 @@ class Torrent(object):
         self.vis_write_sock = sock
         self.switchboard.vis_write_sock = self.vis_write_sock
 
+    def __enter__(self):
+        pass
+
+    def __exit__(self, type, value, tb):
+        self.switchboard.close()
+
 
 def main():
     argparser = argparse.ArgumentParser()
-    argparser.add_argument('torrent_path')
+    argparser.add_argument('torrent_path', help='Location of the '
+                           '.torrent file')
+    argparser.add_argument('-p', '--port', nargs='?', default=DEFAULT_PORT,
+                           help=('Which port to use. Default is '
+                                 '{}'.format(DEFAULT_PORT)))
+    argparser.add_argument('-d', '--directory', nargs='?', default=DEFAULT_DIR,
+                           help=('Where to save downloaded files. Default '
+                                 'is {}'.format(DEFAULT_DIR)))
     args = argparser.parse_args()  # Getting path from command line
-    torrent_path = args.torrent_path
-    mytorrent = Torrent(torrent_path)
-    mytorrent.tracker_request()
-    mytorrent.handshake_peers()
-    mytorrent.reactor.event_loop()
-    return
+    pudb.set_trace()
+    torrent_path = get_path(args.torrent_path)
+    directory = get_path(args.directory)
+    port = args.port
+    mytorrent = Torrent(torrent_path, directory=directory, port=port)
+    with mytorrent:
+        mytorrent.tracker_request()
+        mytorrent.handshake_peers()
+        mytorrent.reactor.event_loop()
 
 
 if __name__ == '__main__':

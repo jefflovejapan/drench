@@ -10,6 +10,7 @@ select_response = namedtuple('select_response',
 
 class Reactor(object):
     def __init__(self):
+        self.is_running = True
         self.subscribed = defaultdict(list)
 
         # Adding server socket to select_list to check for new connections
@@ -31,9 +32,14 @@ class Reactor(object):
             self.select_list.append(listener)
 
     def event_loop(self):
-        while 1:
+        while self.is_running:
             doable_lists = select_response(*select.select(self.select_list,
                                                           [], [], 1))
+
+            if not doable_lists.readable:
+                for i in self.select_list:
+                    if 'read_timeout' in dir(i):
+                        i.read_timeout()
 
             for i in doable_lists.readable:  # Doesn't require if test
                 i.read()  # read only returns for Listener

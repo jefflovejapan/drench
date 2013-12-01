@@ -83,8 +83,6 @@ class Peer(object):
 
     def get_message_id(self, instr):
         self.save_state['message_id'] = struct.unpack('b', instr[0])[0]
-        print ('message_id is',
-               self.message_codes[self.save_state['message_id']])
         self.save_state['state'] = self.states['reading_message']
         return instr[1:]
 
@@ -98,11 +96,7 @@ class Peer(object):
             return instr
 
         if self.save_state['remainder']:
-            print ("Inside get_message. The previous remainder was",
-                   len(self.save_state['remainder']))
-            print "The new contribution is", len(instr)
             instr = self.save_state['remainder'] + instr
-            print 'total length of instr is', len(instr)
 
         # If we have more than what we need we act on the full message and
         # return the rest
@@ -118,7 +112,6 @@ class Peer(object):
 
         # Otherwise we stash what we have and keep things the way they are
         else:
-            print 'saving off', len(instr), 'bytes in remainder'
             self.save_state['remainder'] = instr
             return None
 
@@ -204,8 +197,8 @@ class Peer(object):
             self.torrent.switchboard.mark_off(piece_index)
             print self.torrent.switchboard.bitfield
             if self.torrent.switchboard.complete:
-                print 'bitfield full'
-                self.torrent.switchboard.close()
+                print '\nDownload complete\n'
+                self.reactor.is_running = False
         else:
             raise Exception("hash of piece doesn't"
                             "match hash in torrent_dict")
@@ -213,6 +206,9 @@ class Peer(object):
 
     def pcancel(self):
         print 'pcancel'
+
+    def read_timeout(self):
+        self.mad_requests()
 
     def mad_requests(self):
         for i in xrange(SIM_REQUESTS):
@@ -230,6 +226,8 @@ class Peer(object):
                 if (self.torrent.switchboard.bitfield[i] is True
                         and self.bitfield[i] is True):
                     self.valid_indices.append(i)
+            if not self.valid_indices:
+                return
             else:
                 random.shuffle(self.valid_indices)
         self.request(self.valid_indices.pop())

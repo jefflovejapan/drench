@@ -217,11 +217,17 @@ class Switchboard(object):
         self.vis_write_sock = sock
         self.switchboard.vis_write_sock = sock
 
+
+    # TODO -- refactor write to simply map from a piece index to a set
+    # of files and byte indices
+
     def write(self):
 
         self.seek(self.piece_index * self.piece_length)
         next_want_file = self.get_next_want_file()
-        assert next_want_file
+        if not next_want_file:
+            return
+
         write_file = next_want_file
 
         # Retrieve the file object whose name is described by write_file
@@ -237,6 +243,8 @@ class Switchboard(object):
 
         file_start = self.file_starts[self.file_list.index(write_file)]
         file_internal_index = self.byte_index - file_start
+        if write_obj.closed:
+            return
         write_obj.seek(file_internal_index)
 
         file_length = write_file['length']
