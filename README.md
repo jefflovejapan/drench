@@ -4,7 +4,7 @@ Drench is a lightweight BitTorrent client written in Python. There are a couple 
 
 ##Install
 
-The preferred way to install Drench is with [`pip`](http://www.pip-installer.org/en/latest/installing.html) --- once you have it installed, just run the following command from the terminal:
+The preferred way to install Drench <html><del>is</del></html> will be with [`pip`](http://www.pip-installer.org/en/latest/installing.html) --- once you have it installed, <html><del>just run</del></html> you will just be able to run the following command from the terminal:
 
 `pip install drench`
 
@@ -18,7 +18,7 @@ From the command line enter the following:
 
 `--port 8000`: The port to use for BitTorrent traffic (optional)
 
-'--directory `~/Downloads`': Where to save your download (optional)
+`--directory ~/Downloads`: Where to save your download (optional)
 
 Drench isn't capable of downloading multiple torrents at once; just start up a second instance in another terminal instead.
 
