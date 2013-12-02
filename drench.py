@@ -1,10 +1,10 @@
 #! usr/bin/env python
 
+import argparse
 import requests
 import socket
 import tparser
 import hashlib
-import argparse
 import reactor
 import peer
 import time
@@ -14,10 +14,10 @@ from string import ascii_letters, digits
 from listener import Listener
 from switchboard import Switchboard
 
-DEFAULT_PORT = 55308
-DEFAULT_DIR = '~/Desktop'
 VERSION = '0001'
 ALPHANUM = ascii_letters + digits
+DEFAULT_PORT = 55308
+DEFAULT_DIR = '~/Desktop'
 
 
 def get_path(file_path):
@@ -264,7 +264,6 @@ def main():
         mytorrent.tracker_request()
         mytorrent.handshake_peers()
         mytorrent.reactor.event_loop()
-
 
 if __name__ == '__main__':
     main()

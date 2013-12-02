@@ -1,11 +1,11 @@
 # setup.py
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name="drench",
     version="0.0.1",
     install_requires=['bitarray>=0.8.1', 'requests>=2.0.0'],
-    packages=['drenchpkg'],
+    packages=find_packages(),
 
     # metadata for upload to PyPI
     maintainer="Jeffrey Blagdon",

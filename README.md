@@ -4,7 +4,7 @@ Drench is a lightweight BitTorrent client written in Python. There are a couple 
 
 ##Install
 
-The preferred way to install Drench <html><del>is</del></html> will be with [`pip`](http://www.pip-installer.org/en/latest/installing.html) --- once you have it installed, <html><del>just run</del></html> you will just be able to run the following command from the terminal:
+The preferred way to install Drench is will be with [`pip`](http://www.pip-installer.org/en/latest/installing.html), which will let you run the following command from the terminal:
 
 `pip install drench`
 
@@ -12,7 +12,7 @@ The preferred way to install Drench <html><del>is</del></html> will be with [`pi
 
 From the command line enter the following:
 
-`python drench.py ./mytorrent.torrent --port 8000 --directory ~/Downloads/`
+`python drench ./mytorrent.torrent --port 8000 --directory ~/Downloads/`
 
 `./mytorrent.torrent`: The location of your torrent file (required)
 

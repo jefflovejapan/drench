@@ -4,11 +4,3 @@ drench.egg-info/SOURCES.txt
 drench.egg-info/dependency_links.txt
 drench.egg-info/requires.txt
 drench.egg-info/top_level.txt
-drenchpkg/__init__.py
-drenchpkg/drench.py
-drenchpkg/listener.py
-drenchpkg/peer.py
-drenchpkg/reactor.py
-drenchpkg/switchboard.py
-drenchpkg/tparser.py
-drenchpkg/visualizer.py
