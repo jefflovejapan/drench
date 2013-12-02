@@ -1,7 +1,0 @@
-setup.cfg
-setup.py
-drench.egg-info/PKG-INFO
-drench.egg-info/SOURCES.txt
-drench.egg-info/dependency_links.txt
-drench.egg-info/requires.txt
-drench.egg-info/top_level.txt

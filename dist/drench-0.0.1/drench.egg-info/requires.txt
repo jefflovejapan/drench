@@ -1,2 +1,0 @@
-bitarray>=0.8.1
-requests>=2.0.0
