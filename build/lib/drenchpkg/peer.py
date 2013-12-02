@@ -2,8 +2,8 @@ from bitarray import bitarray
 import struct
 import random
 import hashlib
-import pudb
 
+# Number of simultaneous requests made to "prime the pump" after handshake
 SIM_REQUESTS = 20
 
 
@@ -37,7 +37,6 @@ class Peer(object):
 
     def read(self):
         bytes = self.sock.recv(self.max_size)
-        print 'Just received', len(bytes), 'bytes'
         if len(bytes) == 0:
             print 'Got 0 bytes from fileno {}.'.format(self.fileno())
             self.torrent.kill_peer(self)
@@ -47,9 +46,9 @@ class Peer(object):
         while bytes:
             if self.save_state['state'] == self.states['reading_length']:
                 bytes = self.get_message_length(bytes)
-            if self.save_state['state'] == self.states['reading_id']:
+            elif self.save_state['state'] == self.states['reading_id']:
                 bytes = self.get_message_id(bytes)
-            if self.save_state['state'] == self.states['reading_message']:
+            elif self.save_state['state'] == self.states['reading_message']:
                 bytes = self.get_message(bytes)
 
     def get_message_length(self, instr):
@@ -247,8 +246,6 @@ class Peer(object):
         pass
 
     def request(self, want_piece):
-        # pudb.set_trace()
-        print 'inside request'
         if want_piece == self.torrent.num_pieces - 1:
             piece_length = self.torrent.last_piece_length
         else:

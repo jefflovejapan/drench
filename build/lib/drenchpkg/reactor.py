@@ -1,7 +1,6 @@
 from collections import defaultdict
 import select
 from collections import namedtuple
-import pudb
 
 
 select_response = namedtuple('select_response',
@@ -41,8 +40,8 @@ class Reactor(object):
                     if 'read_timeout' in dir(i):
                         i.read_timeout()
 
-            for i in doable_lists.readable:  # Doesn't require if test
-                i.read()  # read only returns for Listener
+            for i in doable_lists.readable:
+                i.read()
 
                 wclos = i.write
                 self.subscribed['write'].append(wclos)

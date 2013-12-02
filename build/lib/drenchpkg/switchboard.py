@@ -2,8 +2,8 @@ import os
 import bitarray
 import copy
 import json
-import pudb
 from collections import namedtuple
+
 
 start_end_pair = namedtuple('start_end_pair', 'start end')
 
@@ -82,20 +82,6 @@ def get_rightmost_file(byte_index=0, file_starts=[0], files=[]):
             i += 1
     else:
         raise Exception('byte_index lower than all file_starts')
-
-
-def get_file_start(byte_index=0, file_starts=[]):
-    '''
-    Find the starting position of the earliest file that I want to write to
-    '''
-    # Seems like I should be counting forward through these. Find the first
-    # file whose starting position is <= index?
-    i = 1
-    while i <= len(file_starts) + 1:
-        if byte_index >= file_starts[-i]:
-            return file_starts[-i]
-        else:
-            i += 1
 
 
 def get_heads_tails(want_file_pos=[], file_starts=[], num_pieces=0,
@@ -217,15 +203,15 @@ class Switchboard(object):
         self.vis_write_sock = sock
         self.switchboard.vis_write_sock = sock
 
-
     # TODO -- refactor write to simply map from a piece index to a set
-    # of files and byte indices
+    # of files and byte indices. Write should contain a call to another
+    # method that returns files and byte ranges
 
     def write(self):
 
         self.seek(self.piece_index * self.piece_length)
         next_want_file = self.get_next_want_file()
-        if not next_want_file:
+        if next_want_file is None:
             return
 
         write_file = next_want_file

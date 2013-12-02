@@ -1,3 +1,5 @@
+#! usr/bin/env python
+
 import requests
 import socket
 import tparser
@@ -7,12 +9,15 @@ import reactor
 import peer
 import time
 import os
-import pudb
+import random
+from string import ascii_letters, digits
 from listener import Listener
 from switchboard import Switchboard
 
 DEFAULT_PORT = 55308
 DEFAULT_DIR = '~/Desktop'
+VERSION = '0001'
+ALPHANUM = ascii_letters + digits
 
 
 def get_path(file_path):
@@ -108,7 +113,9 @@ class Torrent(object):
         payload = {}
         hashed_info = hashlib.sha1(tparser.bencode(self.torrent_dict['info']))
         self.hash_string = hashed_info.digest()
-        self.peer_id = '-TR2820-wa0n562rl3lu'  # TODO: randomize
+        self.peer_id = ('-DR' + VERSION +
+                        ''.join(random.sample(ALPHANUM, 13)))
+        assert len(self.peer_id) == 20
         payload['info_hash'] = self.hash_string
         payload['peer_id'] = self.peer_id
         payload['port'] = self.port
@@ -249,7 +256,6 @@ def main():
                            help=('Where to save downloaded files. Default '
                                  'is {}'.format(DEFAULT_DIR)))
     args = argparser.parse_args()  # Getting path from command line
-    pudb.set_trace()
     torrent_path = get_path(args.torrent_path)
     directory = get_path(args.directory)
     port = args.port
