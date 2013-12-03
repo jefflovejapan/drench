@@ -1,11 +1,7 @@
 import txws
 from Queue import Queue
-from collections import namedtuple
 from twisted.web import http
 from twisted.internet import protocol, reactor, endpoints
-
-
-download_file = namedtuple('download_file', 'path bits')
 
 
 def init_state(t_dict):
