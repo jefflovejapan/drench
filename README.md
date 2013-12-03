@@ -12,7 +12,7 @@ The preferred way to install Drench is will be with [`pip`](http://www.pip-insta
 
 From the command line enter the following:
 
-`python drench ./mytorrent.torrent --port 8000 --directory ~/Downloads/`
+`python -m drench ./mytorrent.torrent --port 8000 --directory ~/Downloads/`
 
 `./mytorrent.torrent`: The location of your torrent file (required)
 
