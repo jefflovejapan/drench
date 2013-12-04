@@ -18,7 +18,7 @@ From the command line enter the following:
 
 `python -m drench ./mytorrent.torrent --port 8000 --directory ~/Downloads/`
 
-`./mytorrent.torrent`: The location of your torrent file (required)
+`./mytorrent.torrent`: The path to your torrent file (required)
 
 `--port 8000`: The port to use for BitTorrent traffic (optional)
 
