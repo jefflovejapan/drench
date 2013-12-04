@@ -1,7 +1,7 @@
 <head><script src="http://d3js.org/d3.v3.js" charset="utf-8"></script></head>
 <body>
 <script type="text/javascript">
-(function () {
+var magic = function () {
    /*global window */
    /*global WebSocket */
    window.THEWEBSOCKET = new WebSocket("ws://blagdons-macbook-air-2.local:8001");
@@ -119,13 +119,14 @@
  
    var vis_write = function (write_dict) {
        var piece_index = write_dict.piece_index;
-        d3.selectAll(function (d) { return "rect.piece" + piece_index; })
+        d3.selectAll("rect.piece" + piece_index)
           .transition()
           .duration(1000)
           .attr("opacity", 1);
      };
  
    window.THEWEBSOCKET.onmessage = function (message) {
+      console.log('Received a message');
        var meat = JSON.parse(message.data);
        if (meat.kind === "init") {
            build_model(meat);
@@ -138,8 +139,14 @@
        }
    };
  
-   document.onclick = function () { window.THEWEBSOCKET.send('o hai there'); };
- 
-  }) ();
+  var send_piece = function (piece_no) {
+    var template = {"peer": ["46.165.240.14", 50035], "kind": "piece", "piece_index": NaN};
+    template.piece_index = Math.floor(Math.random() * 50);
+    window.THEWEBSOCKET.send(JSON.stringify(template));
+  }
+
+  window.addEventListener("click", send_piece); 
+  }; 
+  magic();
 </script>
 </body>
