@@ -184,11 +184,11 @@ class Switchboard(object):
             rightmost = get_rightmost_index(byte_index=byte_index,
                                             file_starts=self.file_starts)
             if rightmost in self.want_file_pos:
-                return rightmost
+                return rightmost, byte_index
             else:
                     file_start = (self.file_starts
-                                  [self.file_list.index(rightmost)])
-                    file_length = rightmost['length']
+                                  [rightmost])
+                    file_length = self.file_list[rightmost]['length']
                     bytes_rem = file_start + file_length - byte_index
                     if len(block) > bytes_rem:
                         block = block[bytes_rem:]
@@ -211,7 +211,8 @@ class Switchboard(object):
 
     def write(self, byte_index, block):
 
-        file_list_index = self.get_next_want_file(byte_index, block)
+        file_list_index, write_byte_index = self.get_next_want_file(byte_index,
+                                                                    block)
 
         if file_list_index is not None:
             index_in_want_files = self.want_file_pos.index(file_list_index)
@@ -222,12 +223,12 @@ class Switchboard(object):
             file_start = self.file_starts[file_list_index]
 
             # And find where we start writing within the file
-            file_internal_index = byte_index - file_start
+            file_internal_index = write_byte_index - file_start
 
             if write_file.closed:
                 return
-            write_file.seek(file_internal_index)
 
+            write_file.seek(file_internal_index)
             file_length = self.file_list[file_list_index]['length']
             bytes_writable = file_length - file_internal_index
 
@@ -235,7 +236,7 @@ class Switchboard(object):
             if bytes_writable < len(block):
                 write_file.write(block[:bytes_writable])
                 block = block[bytes_writable:]
-                byte_index = byte_index + bytes_writable
+                write_byte_index = write_byte_index + bytes_writable
 
                 # Find the would-be next highest index
                 # (we could be on last file)
@@ -244,7 +245,7 @@ class Switchboard(object):
                 # If we're not at the end of the list,
                 # keep trying to write
                 if j <= self.want_file_pos[-1]:
-                    self.write(byte_index, block)
+                    self.write(write_byte_index, block)
                 else:
                     return
 
@@ -300,10 +301,17 @@ class Switchboard(object):
 
 def main():
     from tparser import bdecode_file
-    myfiles = bdecode_file('/Users/jeffblagdon/Desktop/dorian.torrent')['info']['files']
-    some_file_starts = get_file_starts(myfiles)
-    for file_start in some_file_starts:
-        print file_start, get_rightmost_index(file_start, some_file_starts)
+    myinfo = bdecode_file('/Users/jeffblagdon/Desktop/dorian.torrent')['info']
+    some_file_starts = get_file_starts(myinfo['files'])
+    piece_length = myinfo['piece length']
+    piece_index = 836
+    byte_index = piece_length * piece_index
+    pudb.set_trace()
+    rightmost = get_rightmost_index(byte_index=byte_index,
+                                    file_starts=some_file_starts)
+    file_internal_index = byte_index - some_file_starts[rightmost]
+    assert file_internal_index >= 0
+
 
 if __name__ == '__main__':
     main()
