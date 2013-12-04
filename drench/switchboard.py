@@ -281,7 +281,7 @@ class Switchboard(object):
         assert self.vis_write_sock
         while self.queued_messages:
             # TODO -- ask if this makes sense
-            next_message = json.dumps(self.queued_messages.pop(0)) + '\r\n'
+            next_message = json.dumps(self.queued_messages.pop(0)) + '\r\n\r\n'
             self.vis_write_sock.send(next_message)
 
     def mark_off(self, index):
