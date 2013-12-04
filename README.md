@@ -8,6 +8,10 @@ The preferred way to install Drench is will be with [`pip`](http://www.pip-insta
 
 `pip install drench`
 
+Alternatively, you can clone the source and run the following:
+
+`python setup.py install`
+
 ##Use
 
 From the command line enter the following:
