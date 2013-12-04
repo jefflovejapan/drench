@@ -2,6 +2,7 @@ import os
 import bitarray
 import copy
 import json
+import pudb
 from collections import namedtuple
 
 
@@ -68,7 +69,7 @@ def get_file_starts(file_list):
     return starts
 
 
-def get_rightmost_file(byte_index=0, file_starts=[0], files=[]):
+def get_rightmost_index(byte_index=0, file_starts=[0]):
 
     '''
     Retrieve the highest-indexed file that starts at or before byte_index.
@@ -77,7 +78,7 @@ def get_rightmost_file(byte_index=0, file_starts=[0], files=[]):
     while i <= len(file_starts):
         start = file_starts[-i]
         if start <= byte_index:
-            return files[-i]
+            return len(file_starts) - i
         else:
             i += 1
     else:
@@ -124,6 +125,19 @@ def get_head_tail(want_index=0, file_starts=[], num_pieces=0,
     return start_end_pair(start=first_piece, end=last_piece)
 
 
+def get_write_index(write_file_description, outfiles):
+    # Retrieve the file object whose name matches
+    # write_file_description
+    i = 0
+    while i < len(outfiles):
+        if outfiles[i].name == os.path.join(*write_file_description['path']):
+            return i
+        else:
+            i += 1
+    else:
+        raise Exception('Nothing matches')
+
+
 def build_bitfield(heads_and_tails=[], num_pieces=0):
     this_bitfield = bitarray.bitarray('0' * num_pieces)
     for i in heads_and_tails:
@@ -141,8 +155,6 @@ class Switchboard(object):
         self.file_starts = get_file_starts(self.file_list)
         self.want_file_pos = get_want_file_pos(self.file_list)
         self.outfiles = []
-        self.byte_index = 0
-        self.block = ''
         self.queued_messages = []
         self.vis_write_sock = None
         os.mkdir(self.dirname)
@@ -162,39 +174,29 @@ class Switchboard(object):
                                        num_pieces=self.num_pieces)
         self.vis_init()
 
-    def get_next_want_file(self):
+    def get_next_want_file(self, byte_index, block):
         '''
         Returns the leftmost file in the user's list of wanted files
         (want_file_pos). If the first file it finds isn't in the list,
         it will keep searching until the length of 'block' is exceeded.
         '''
-        while self.block:
-            rightmost = get_rightmost_file(byte_index=self.byte_index,
-                                           file_starts=self.file_starts,
-                                           files=self.file_list)
-            if self.file_list.index(rightmost) in self.want_file_pos:
+        while block:
+            rightmost = get_rightmost_index(byte_index=byte_index,
+                                            file_starts=self.file_starts)
+            if rightmost in self.want_file_pos:
                 return rightmost
             else:
                     file_start = (self.file_starts
                                   [self.file_list.index(rightmost)])
                     file_length = rightmost['length']
-                    bytes_rem = file_start + file_length - self.byte_index
-                    if len(self.block) > bytes_rem:
-                        self.block = self.block[bytes_rem:]
-                        self.byte_index = self.byte_index + bytes_rem
+                    bytes_rem = file_start + file_length - byte_index
+                    if len(block) > bytes_rem:
+                        block = block[bytes_rem:]
+                        byte_index = byte_index + bytes_rem
                     else:
-                        self.block = ''
+                        block = ''
         else:
             return None
-
-    def seek(self, index):
-        '''
-        Set how far to advance (bytewise) in file_list
-        '''
-        self.byte_index = index
-
-    def set_block(self, block):
-        self.block = block
 
     def set_piece_index(self, piece_index):
         self.piece_index = piece_index
@@ -207,57 +209,49 @@ class Switchboard(object):
     # of files and byte indices. Write should contain a call to another
     # method that returns files and byte ranges
 
-    def write(self):
+    def write(self, byte_index, block):
 
-        self.seek(self.piece_index * self.piece_length)
-        next_want_file = self.get_next_want_file()
-        if next_want_file is None:
-            return
+        file_list_index = self.get_next_want_file(byte_index, block)
 
-        write_file = next_want_file
+        if file_list_index is not None:
+            index_in_want_files = self.want_file_pos.index(file_list_index)
 
-        # Retrieve the file object whose name is described by write_file
-        i = 0
-        while i < len(self.outfiles):
-            if self.outfiles[i].name == os.path.join(*write_file['path']):
-                write_obj = self.outfiles[i]
-                break
-            else:
-                i += 1
-        else:
-            raise Exception('Nothing matches')
+            # The actual file object to write to
+            write_file = self.outfiles[index_in_want_files]
 
-        file_start = self.file_starts[self.file_list.index(write_file)]
-        file_internal_index = self.byte_index - file_start
-        if write_obj.closed:
-            return
-        write_obj.seek(file_internal_index)
+            file_start = self.file_starts[file_list_index]
 
-        file_length = write_file['length']
+            # And find where we start writing within the file
+            file_internal_index = byte_index - file_start
 
-        # How far till the end?
-        bytes_writable = file_length - file_internal_index
-
-        # If we can't write the entire block
-        if bytes_writable < len(self.block):
-
-            write_obj.write(self.block[:bytes_writable])
-            self.block = self.block[bytes_writable:]
-            self.byte_index = self.byte_index + bytes_writable
-
-            # Find the would-be next highest index (we could be on last file)
-            j = self.file_starts.index(file_start) + 1
-
-            # If we're not at the end, keep trying to write
-            if j <= self.want_file_pos[-1]:
-                self.write()
-            else:
+            if write_file.closed:
                 return
+            write_file.seek(file_internal_index)
 
-        # If we can write the entire block
-        else:
-            write_obj.write(self.block)
-            self.block = ''
+            file_length = self.file_list[file_list_index]['length']
+            bytes_writable = file_length - file_internal_index
+
+            # If we can't write the entire block
+            if bytes_writable < len(block):
+                write_file.write(block[:bytes_writable])
+                block = block[bytes_writable:]
+                byte_index = byte_index + bytes_writable
+
+                # Find the would-be next highest index
+                # (we could be on last file)
+                j = self.file_starts.index(file_start) + 1
+
+                # If we're not at the end of the list,
+                # keep trying to write
+                if j <= self.want_file_pos[-1]:
+                    self.write(byte_index, block)
+                else:
+                    return
+
+            # If we can write the entire block
+            else:
+                write_file.write(block)
+                block = ''
 
     def vis_init(self):
         '''
@@ -302,3 +296,14 @@ class Switchboard(object):
     def close(self):
         for i in self.outfiles:
             i.close()
+
+
+def main():
+    from tparser import bdecode_file
+    myfiles = bdecode_file('/Users/jeffblagdon/Desktop/dorian.torrent')['info']['files']
+    some_file_starts = get_file_starts(myfiles)
+    for file_start in some_file_starts:
+        print file_start, get_rightmost_index(file_start, some_file_starts)
+
+if __name__ == '__main__':
+    main()

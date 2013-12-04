@@ -2,6 +2,7 @@ from bitarray import bitarray
 import struct
 import random
 import hashlib
+import pudb
 
 # Number of simultaneous requests made to "prime the pump" after handshake
 SIM_REQUESTS = 20
@@ -189,10 +190,8 @@ class Peer(object):
             print 'hash matches'
             print ('writing piece {}. Length is '
                    '{}').format(repr(block)[:10] + '...', len(block))
-
-            self.torrent.switchboard.set_piece_index(piece_index)
-            self.torrent.switchboard.set_block(block)
-            self.torrent.switchboard.write()
+            byte_index = piece_index * self.torrent.piece_length
+            self.torrent.switchboard.write(byte_index, block)
             self.torrent.switchboard.mark_off(piece_index)
             print self.torrent.switchboard.bitfield
             if self.torrent.switchboard.complete:
