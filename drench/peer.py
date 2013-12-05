@@ -2,6 +2,7 @@ from bitarray import bitarray
 import struct
 import random
 import hashlib
+import pudb
 
 
 # Number of simultaneous requests made to "prime the pump" after handshake
@@ -29,6 +30,9 @@ class Peer(object):
                               'piece', 'cancel', 'port']
         self.ischoking = True
         self.isinterested = False
+        activate_dict = {'kind': 'activate', 'address': self.getpeername()}
+        # pudb.set_trace()
+        self.torrent.switchboard.try_vis_handoff(activate_dict)
 
     def fileno(self):
         return self.sock.fileno()
