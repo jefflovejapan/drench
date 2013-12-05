@@ -125,19 +125,23 @@
           .attr("opacity", 1);
      };
  
-   window.THEWEBSOCKET.onmessage = function (message) {
+   window.THEWEBSOCKET.onmessage = function (chunk) {
       console.log('Received a message');
-       var meat = JSON.parse(message.data);
-       if (meat.kind === "init") {
-           build_model(meat);
-       } else if (meat.kind === "request") {
-           vis_request(meat);
-       } else if (meat.kind === "piece") {
-           vis_write(meat);
-       } else {
-           throw "Data kind invalid";
+      var messages = chunk.data.split('\r\n\r\n')
+      messages.forEach( function (message) {
+         var meat = JSON.parse(message);
+         if (meat.kind === "init") {
+             build_model(meat);
+         } else if (meat.kind === "request") {
+             vis_request(meat);
+         } else if (meat.kind === "piece") {
+             vis_write(meat);
+         } else {
+             throw "Data kind invalid";
+         }
        }
-   };
+     )
+     };
  
   var send_piece = function (piece_no) {
     var template = {"peer": ["46.165.240.14", 50035], "kind": "piece", "piece_index": NaN};
