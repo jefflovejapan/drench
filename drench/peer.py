@@ -2,7 +2,7 @@ from bitarray import bitarray
 import struct
 import random
 import hashlib
-import pudb
+
 
 # Number of simultaneous requests made to "prime the pump" after handshake
 SIM_REQUESTS = 20

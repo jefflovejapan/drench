@@ -2,7 +2,6 @@ import os
 import bitarray
 import copy
 import json
-import pudb
 from collections import namedtuple
 
 
@@ -306,7 +305,6 @@ def main():
     piece_length = myinfo['piece length']
     piece_index = 836
     byte_index = piece_length * piece_index
-    pudb.set_trace()
     rightmost = get_rightmost_index(byte_index=byte_index,
                                     file_starts=some_file_starts)
     file_internal_index = byte_index - some_file_starts[rightmost]
