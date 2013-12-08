@@ -1,7 +1,9 @@
 from bitarray import bitarray
+from piece import Piece
 import struct
 import random
 import hashlib
+from math import ceil
 import pudb
 
 
@@ -17,6 +19,7 @@ class Peer(object):
     # Can't initialize without a dictionary. Handshake
     # takes place using socket before peer init
     def __init__(self, sock, reactor, torrent):
+        print 'inside peer.__init__'
         self.sock = sock
         self.sock.setblocking(True)
         self.reactor = reactor
@@ -44,10 +47,21 @@ class Peer(object):
         return self.sock.getpeername()
 
     def read(self):
+        '''
+        Chain of events:
+            - process_input
+            - check save_state and read length, id, and message accordingly
+                - if we have a piece (really a block), we piece.save it out
+                  inside call to ppiece
+                    - If we've completed a piece we:
+                        - Tell the switchboard to write it out
+                        - init a new piece
+        '''
+
         try:
             bytes = self.sock.recv(self.max_size)
         except:
-            self.kill_peer()
+            self.torrent.kill_peer()
         if len(bytes) == 0:
             print 'Got 0 bytes from fileno {}.'.format(self.fileno())
             self.torrent.kill_peer(self)
@@ -180,7 +194,8 @@ class Peer(object):
         self.bitfield.frombytes(self.save_state['message'])
         self.interested()
         self.unchoke()
-        self.request_piece()
+        self.piece = self.init_piece()
+        self.request_all()
 
     def prequest(self):
         print 'prequest'
@@ -190,53 +205,41 @@ class Peer(object):
         Process a piece that we've received from a peer, writing it out to
         one or more files
         '''
-        piece_index, block_begin = struct.unpack('!ii', content[0:8])
-        piece_dict = {'kind': 'piece', 'peer': self.sock.getpeername(),
-                      'piece_index': piece_index}
-        self.torrent.switchboard.try_vis_handoff(piece_dict)
+        piece_index, byte_begin = struct.unpack('!ii', content[0:8])
+        assert byte_begin % REQUEST_SIZE == 0
+        block_begin = byte_begin / REQUEST_SIZE
         block = content[8:]
-        if hashlib.sha1(block).digest() == (self.torrent.torrent_dict['info']
-                                            ['pieces']
-                                            [20 * piece_index:20 * piece_index
-                                             + 20]):
-            print 'hash matches'
-            print ('writing piece {}. Length is '
-                   '{}').format(repr(block)[:10] + '...', len(block))
-            byte_index = piece_index * self.torrent.piece_length
-            self.torrent.switchboard.write(byte_index, block)
-            self.torrent.switchboard.mark_off(piece_index)
-            print self.torrent.switchboard.bitfield
-            if self.torrent.switchboard.complete:
-                print '\nDownload complete\n'
-                self.reactor.is_running = False
-        else:
-            raise Exception("hash of piece doesn't"
-                            "match hash in torrent_dict")
-        self.request_piece()
+        self.piece.save(index=block_begin, bytes=block)
+        if self.piece.complete:
+            piece_bytes = self.piece.get_bytes()
+            piece_dict = {'kind': 'piece', 'peer': self.sock.getpeername(),
+                          'piece_index': piece_index}
+            self.torrent.switchboard.try_vis_handoff(piece_dict)
+            if hashlib.sha1(piece_bytes).digest() == (self.torrent.torrent_dict
+                                                      ['info']['pieces']
+                                                      [20 * piece_index:20 *
+                                                       piece_index + 20]):
+                print 'hash matches'
+                print ('writing piece {}. Length is '
+                       '{}').format(repr(piece_bytes)[:10] + '...',
+                                    len(piece_bytes))
+                byte_index = piece_index * self.torrent.piece_length
+                self.torrent.switchboard.write(byte_index, block)
+                self.torrent.switchboard.mark_off(piece_index)
+                print self.torrent.switchboard.bitfield
+                if self.torrent.switchboard.complete:
+                    print '\nDownload complete\n'
+                    self.reactor.is_running = False
+            else:
+                pudb.set_trace()
+            self.piece = self.init_piece()
+            self.request_all()
 
     def pcancel(self):
         print 'pcancel'
 
     def read_timeout(self):
-        self.request_piece()
-
-    def request_piece(self):
-        if not self.valid_indices:
-            # We want a list of all indices where:
-            #   - We're interested in the piece
-            #     (i.e., it's in torrent.outfile.bitfield)
-            #   - The peer has the piece (it's available)
-            for i in range(self.torrent.num_pieces):
-                if not self.bitfield:
-                    pudb.set_trace()
-                if (self.torrent.switchboard.bitfield[i] is True
-                        and self.bitfield[i] is True):
-                    self.valid_indices.append(i)
-            if not self.valid_indices:
-                return
-            else:
-                random.shuffle(self.valid_indices)
-        self.request(self.valid_indices.pop())
+        self.request_all()
 
     def interested(self):
         packet = ''.join(struct.pack('!ib', 1, 2))
@@ -252,18 +255,52 @@ class Peer(object):
     def write(self):
         pass
 
-    def request(self, want_piece):
-        if want_piece == self.torrent.num_pieces - 1:
-            piece_length = self.torrent.last_piece_length
+    def get_piece_length(self, index):
+        if index == self.torrent.last_piece:
+            return self.torrent.last_piece_length
         else:
-            piece_length = self.torrent.piece_length
-        packet = ''.join(struct.pack('!ibiii', 13, 6, want_piece, 0,
-                         piece_length))
-        bytes = self.sock.send(packet)
+            return self.torrent.piece_length
+
+    def init_piece(self):
+        if not self.valid_indices:
+            # We want a list of all indices where:
+            #   - We're interested in the piece
+            #     (i.e., it's in torrent.outfile.bitfield)
+            #   - The peer has the piece (it's available)
+            for i in range(self.torrent.num_pieces):
+                assert self.bitfield
+                if (self.torrent.switchboard.bitfield[i] is True
+                        and self.bitfield[i] is True):
+                    self.valid_indices.append(i)
+            if not self.valid_indices:
+                return
+            else:
+                random.shuffle(self.valid_indices)
+        index = self.valid_indices.pop()
+        length = self.get_piece_length(index)
+        if index is self.torrent.last_piece:
+            num_blocks = int(ceil(float(length / REQUEST_SIZE)))
+        else:
+            num_blocks = int(ceil(float(length / REQUEST_SIZE)))
+        if (index is None or num_blocks is None):
+            pudb.set_trace()
+        return Piece(index=index, num_blocks=num_blocks)
+
+    def request_all(self):
+        if self.piece.index is not self.torrent.last_piece:
+            for i in xrange(self.piece.num_blocks):
+                self.request_block(i, self.torrent.piece_length)
         request_dict = {'kind': 'request',
                         'peer': self.sock.getpeername(),
-                        'piece': want_piece}
+                        'piece': self.piece.index}
         self.torrent.switchboard.try_vis_handoff(request_dict)
         print 'next request:', request_dict
+
+    def request_block(self, block_index, piece_length):
+        subindex = block_index * REQUEST_SIZE
+        assert piece_length % REQUEST_SIZE == 0
+        packet = ''.join(struct.pack('!ibiii', 13, 6, self.piece.index,
+                                     subindex, REQUEST_SIZE))
+        bytes = self.sock.send(packet)
         if bytes != len(packet):
             raise Exception('couldnt send request')

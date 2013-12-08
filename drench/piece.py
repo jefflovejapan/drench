@@ -1,12 +1,19 @@
 from bitarray import bitarray
+import pudb
 
 
 class Piece(object):
-    def __init__(self, length):
-        self.bitfield = bitarray('1' * length)
+    def __init__(self, index=None, num_blocks=None):
+        assert index is not None
+        assert num_blocks is not None
+        self.index = index
+        self.bitfield = bitarray('1' * num_blocks)
+        self.num_blocks = num_blocks
         self.data = {}
 
     def save(self, index=None, bytes=None):
+        if index > len(self.bitfield) - 1:
+            pudb.set_trace()
         self.data[index] = bytes
         self.bitfield[index] = False
 
@@ -28,7 +35,7 @@ class Piece(object):
 
 def tests():
     length = 5
-    my_piece = Piece(length)
+    my_piece = Piece(1, length)
     for i in xrange(length):
         my_piece.save(index=i, bytes=str(i))
     assert my_piece.complete
