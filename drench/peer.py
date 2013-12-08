@@ -61,7 +61,8 @@ class Peer(object):
         try:
             bytes = self.sock.recv(self.max_size)
         except:
-            self.torrent.kill_peer()
+            self.torrent.kill_peer(self)
+            return
         if len(bytes) == 0:
             print 'Got 0 bytes from fileno {}.'.format(self.fileno())
             self.torrent.kill_peer(self)
@@ -212,17 +213,25 @@ class Peer(object):
         self.piece.save(index=block_begin, bytes=block)
         if self.piece.complete:
             piece_bytes = self.piece.get_bytes()
-            piece_dict = {'kind': 'piece', 'peer': self.sock.getpeername(),
-                          'piece_index': piece_index}
-            self.torrent.switchboard.try_vis_handoff(piece_dict)
+            if self.piece.index == self.torrent.last_piece:
+                piece_bytes = piece_bytes[:self.torrent.last_piece_length]
             if hashlib.sha1(piece_bytes).digest() == (self.torrent.torrent_dict
                                                       ['info']['pieces']
                                                       [20 * piece_index:20 *
                                                        piece_index + 20]):
+
                 print 'hash matches'
+
+                # Take care of visualizer stuff
+                piece_dict = {'kind': 'piece', 'peer': self.sock.getpeername(),
+                              'piece_index': piece_index}
+                self.torrent.switchboard.try_vis_handoff(piece_dict)
+
                 print ('writing piece {}. Length is '
                        '{}').format(repr(piece_bytes)[:10] + '...',
                                     len(piece_bytes))
+
+                # Write out
                 byte_index = piece_index * self.torrent.piece_length
                 self.torrent.switchboard.write(byte_index, block)
                 self.torrent.switchboard.mark_off(piece_index)

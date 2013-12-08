@@ -193,6 +193,8 @@ class Torrent(object):
         # new peer objects. Should make this functional, that way I
         # can also call when I get new peers.
         for i in self.peer_ips:
+            if len(self.peer_dict) >= 30:
+                break
             s = socket.socket()
             print s.fileno()
             s.setblocking(True)
@@ -212,7 +214,7 @@ class Torrent(object):
                 data = s.recv(68)  # Peer's handshake - len from docs
                 if data:
                     print 'From {} received: {}'.format(s.fileno(), repr(data))
-                    self.initpeer(s)  # Initializing peers here
+                    self.initpeer(s)
             except:
                 print '{} timed out on recv'.format(s.fileno())
                 continue
@@ -228,7 +230,6 @@ class Torrent(object):
         tpeer = peer.Peer(sock, self.reactor, self)
         self.peer_dict[sock] = tpeer
         self.reactor.select_list.append(tpeer)
-        # Reactor now listening to tpeer object
 
     def add_peer(self, sock):
         print 'adding peer at', sock.getpeername()
