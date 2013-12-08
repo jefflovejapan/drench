@@ -6,7 +6,11 @@ import pudb
 
 
 # Number of simultaneous requests made to "prime the pump" after handshake
-SIM_REQUESTS = 10
+SIM_REQUESTS = 20
+
+# Maximum request size according to
+# https://wiki.theory.org/BitTorrentSpecification
+REQUEST_SIZE = 2 ** 14
 
 
 class Peer(object):
@@ -176,7 +180,7 @@ class Peer(object):
         self.bitfield.frombytes(self.save_state['message'])
         self.interested()
         self.unchoke()
-        self.mad_requests()
+        self.request_piece()
 
     def prequest(self):
         print 'prequest'
@@ -214,13 +218,7 @@ class Peer(object):
         print 'pcancel'
 
     def read_timeout(self):
-        self.mad_requests()
-
-    def mad_requests(self):
-        for i in xrange(SIM_REQUESTS):
-            self.request_piece()
-            print ('Just made {}th consecutive request '
-                   'to {}'.format(i, self.fileno()))
+        self.request_piece()
 
     def request_piece(self):
         if not self.valid_indices:
