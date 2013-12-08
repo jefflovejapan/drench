@@ -207,8 +207,8 @@ class Torrent(object):
             except socket.error:
                 print '{} threw a socket error'.format(s.fileno())
                 continue
-            except Exception:
-                pudb.set_trace()
+            except:
+                raise Exception
             s.send(packet)
             try:
                 data = s.recv(68)  # Peer's handshake - len from docs

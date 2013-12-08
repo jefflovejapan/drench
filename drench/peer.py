@@ -248,6 +248,7 @@ class Peer(object):
         print 'pcancel'
 
     def read_timeout(self):
+        pudb.set_trace()
         self.request_all()
 
     def interested(self):
@@ -288,17 +289,17 @@ class Peer(object):
         index = self.valid_indices.pop()
         length = self.get_piece_length(index)
         if index is self.torrent.last_piece:
-            num_blocks = int(ceil(float(length / REQUEST_SIZE)))
+            num_blocks = int(ceil(float(length) / REQUEST_SIZE))
         else:
-            num_blocks = int(ceil(float(length / REQUEST_SIZE)))
+            num_blocks = int(ceil(float(length) / REQUEST_SIZE))
         if (index is None or num_blocks is None):
             pudb.set_trace()
         return Piece(index=index, num_blocks=num_blocks)
 
     def request_all(self):
-        if self.piece.index is not self.torrent.last_piece:
-            for i in xrange(self.piece.num_blocks):
-                self.request_block(i, self.torrent.piece_length)
+        print 'requesting all for piece', self.piece.index
+        for i in xrange(self.piece.num_blocks):
+            self.request_block(i, self.torrent.piece_length)
         request_dict = {'kind': 'request',
                         'peer': self.sock.getpeername(),
                         'piece': self.piece.index}
@@ -308,6 +309,7 @@ class Peer(object):
     def request_block(self, block_index, piece_length):
         subindex = block_index * REQUEST_SIZE
         assert piece_length % REQUEST_SIZE == 0
+
         packet = ''.join(struct.pack('!ibiii', 13, 6, self.piece.index,
                                      subindex, REQUEST_SIZE))
         bytes = self.sock.send(packet)

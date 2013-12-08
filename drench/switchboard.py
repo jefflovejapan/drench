@@ -2,6 +2,7 @@ import os
 import bitarray
 import copy
 import json
+import pudb
 from collections import namedtuple
 
 
@@ -12,7 +13,7 @@ def build_dirs(files):
     '''
     Build necessary directories based on a list of file paths
     '''
-
+    # pudb.set_trace()
     for i in files:
         if len(i['path']) > 1:
             addpath = os.path.join(*i['path'][:-1])
@@ -209,12 +210,17 @@ class Switchboard(object):
     # method that returns files and byte ranges
 
     def write(self, byte_index, block):
+        try:
+            file_list_index, write_byte_index = self.get_next_want_file(byte_index,
+                                                                        block)
+        except:
+            pudb.set_trace()
 
-        file_list_index, write_byte_index = self.get_next_want_file(byte_index,
-                                                                    block)
-
-        if file_list_index is not None:
-            index_in_want_files = self.want_file_pos.index(file_list_index)
+        if file_list_index is not None and write_byte_index is not None:
+            try:
+                index_in_want_files = self.want_file_pos.index(file_list_index)
+            except:
+                return
 
             # The actual file object to write to
             write_file = self.outfiles[index_in_want_files]

@@ -19,14 +19,19 @@ class Piece(object):
 
     def get_bytes(self):
         result = ''
-        for i in sorted(self.data.keys()):
-            result += self.data.pop(i)
+        try:
+            for i in sorted(self.data.keys()):
+                result += self.data.pop(i)
+        except:
+            pudb.set_trace()
         assert self.data == {}
         assert type(result) == str
         return result
 
     @property
     def complete(self):
+        if self.bitfield is None:
+            pudb.set_trace()
         if any(self.bitfield):
             return False
         else:
