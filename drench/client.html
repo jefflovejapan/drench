@@ -8,6 +8,7 @@
    window.onbeforeunload = function () { window.THEWEBSOCKET.close(); };
 
    var files = [];
+   var peers = [];
    var want_file_pos = [];
    var w = window.innerWidth;
    var h = window.innerHeight;
@@ -18,6 +19,8 @@
    var piece_width = 10;
    var piece_y = Math.floor(bar_height / 2) - Math.floor(piece_height / 2);
    var colors = []
+   var color_scale_10 = d3.scale.category10();
+   var color_scale_20 = d3.scale.category20c();
 
    var build_model = function (init_dict) {
      want_file_pos = init_dict.want_file_pos;
@@ -37,10 +40,10 @@
    var set_colors = function () {
     for (var i = 0; i < 30; i++ ) {
       if (i < 10) {
-        var color = d3.scale.category10()(i);
+        color = color_scale_10(i);
         colors.push(color);
       } else {
-        var color = d3.scale.category20()(i - 10);
+        var color = color_scale_20(i - 10);
         colors.push(color);
       }
     }
@@ -121,39 +124,46 @@
  
  var vis_request = function (req_dict) {
  };
+
+ var get_color = function (ip) {
+  for (var i = 0; i < colors.length; i++) {
+    if (peers[i].ip === ip) {
+      return peers[i].color;
+    }
+  }
+};
  
  var vis_write = function (write_dict) {
    var piece_index = write_dict.piece_index;
    d3.selectAll("rect.piece" + piece_index)
+   .attr("fill", get_color(write_dict.peer.join(":")))
    .transition()
    .duration(1000)
    .attr("opacity", 1);
  };
 
- var vis_build_peer = function (peer_dict) {
-    // Each new peer should get an entry containing a hard reference to a color. 
-    //    - Create a list of 30 colors, each new peer gets a new color.
-    //    - Peers that die "surrender" their color 
-    //        - All of the pieces that they've contributed change color
-    //        - The pieces and the peer simultaneously fade to the changed 
-    //          color, then the peer disappears
-    var this_peer = {"ip": peer_dict.ip.join(":"), "color": colors.shift()};
-    peers.append(this_peer);
+ var build_peer = function (peer_dict) {
+    var this_peer = {"ip": peer_dict.address.join(":"), "color": colors.shift()};
+    peers.push(this_peer);
   };
 
   window.THEWEBSOCKET.onmessage = function (chunk) {
     console.log('Received a message');
     var messages = chunk.data.split('\r\n\r\n')
     messages.forEach( function (message) {
-     var meat = JSON.parse(message);
+     try {
+      var meat = JSON.parse(message);
+    } catch (e) {
+      console.log(e);
+    }
      if (meat.kind === "init") {
        build_model(meat);
      } else if (meat.kind === "request") {
        vis_request(meat);
      } else if (meat.kind === "piece") {
        vis_write(meat);
-     } else if (meat.kind == "announce") {
-      vis_build_peer(meat)
+     } else if (meat.kind == "activate") {
+        build_peer(meat);
     } else {
      throw "Data kind invalid";
    }

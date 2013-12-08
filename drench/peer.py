@@ -6,7 +6,7 @@ import pudb
 
 
 # Number of simultaneous requests made to "prime the pump" after handshake
-SIM_REQUESTS = 20
+SIM_REQUESTS = 10
 
 
 class Peer(object):
@@ -31,7 +31,6 @@ class Peer(object):
         self.ischoking = True
         self.isinterested = False
         activate_dict = {'kind': 'activate', 'address': self.getpeername()}
-        # pudb.set_trace()
         self.torrent.switchboard.try_vis_handoff(activate_dict)
 
     def fileno(self):
@@ -41,7 +40,10 @@ class Peer(object):
         return self.sock.getpeername()
 
     def read(self):
-        bytes = self.sock.recv(self.max_size)
+        try:
+            bytes = self.sock.recv(self.max_size)
+        except:
+            self.kill_peer()
         if len(bytes) == 0:
             print 'Got 0 bytes from fileno {}.'.format(self.fileno())
             self.torrent.kill_peer(self)
@@ -164,10 +166,12 @@ class Peer(object):
         print 'pnotinterested'
 
     def phave(self):
+        print 'phave from', self.fileno()
         index = struct.unpack('>i', self.save_state['message'])[0]
         self.bitfield[index] = True
 
     def pbitfield(self):
+        print 'pbitfield from', self.fileno()
         self.bitfield = bitarray()
         self.bitfield.frombytes(self.save_state['message'])
         self.interested()
@@ -215,7 +219,7 @@ class Peer(object):
     def mad_requests(self):
         for i in xrange(SIM_REQUESTS):
             self.request_piece()
-            print ('Just made {}th consecutive request'
+            print ('Just made {}th consecutive request '
                    'to {}'.format(i, self.fileno()))
 
     def request_piece(self):
@@ -225,6 +229,8 @@ class Peer(object):
             #     (i.e., it's in torrent.outfile.bitfield)
             #   - The peer has the piece (it's available)
             for i in range(self.torrent.num_pieces):
+                if not self.bitfield:
+                    pudb.set_trace()
                 if (self.torrent.switchboard.bitfield[i] is True
                         and self.bitfield[i] is True):
                     self.valid_indices.append(i)

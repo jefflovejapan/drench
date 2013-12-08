@@ -8,6 +8,7 @@ import peer
 import time
 import os
 import random
+import pudb
 from string import ascii_letters, digits
 from listener import Listener
 from switchboard import Switchboard
@@ -187,27 +188,29 @@ class Torrent(object):
         # Think about what we're doing -- using this list to create
         # new peer objects. Should make this functional, that way I
         # can also call when I get new peers.
+        pudb.set_trace()
         for i in self.peer_ips:
-            print i  # just want to see who i'm talking to
             s = socket.socket()
-            s.setblocking(True)
-            s.settimeout(1)
+            print s.fileno()
+            s.setblocking(False)
             try:
                 s.connect(i)
             except socket.timeout:
-                print '{} timed out on connect'.format(i)
+                print '{} timed out on connect'.format(s.fileno())
                 continue
             except socket.error:
-                print '{} threw a socket error'.format(i)
+                print '{} threw a socket error'.format(s.fileno())
                 continue
+            except Exception:
+                pudb.set_trace()
             s.send(packet)
             try:
                 data = s.recv(68)  # Peer's handshake - len from docs
                 if data:
-                    print 'From {} received: {}'.format(i, repr(data))
+                    print 'From {} received: {}'.format(s.fileno(), repr(data))
                     self.initpeer(s)  # Initializing peers here
             except:
-                print '{} timed out on recv'.format(i)
+                print '{} timed out on recv'.format(s.fileno())
                 continue
         else:
             self.peer_ips = []
