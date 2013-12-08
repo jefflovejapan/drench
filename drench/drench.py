@@ -188,11 +188,11 @@ class Torrent(object):
         # Think about what we're doing -- using this list to create
         # new peer objects. Should make this functional, that way I
         # can also call when I get new peers.
-        pudb.set_trace()
         for i in self.peer_ips:
             s = socket.socket()
             print s.fileno()
-            s.setblocking(False)
+            s.setblocking(True)
+            s.settimeout(0.5)
             try:
                 s.connect(i)
             except socket.timeout:

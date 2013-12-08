@@ -6,7 +6,7 @@ import pudb
 
 
 # Number of simultaneous requests made to "prime the pump" after handshake
-SIM_REQUESTS = 10
+SIM_REQUESTS = 1
 
 
 class Peer(object):
@@ -30,6 +30,7 @@ class Peer(object):
                               'piece', 'cancel', 'port']
         self.ischoking = True
         self.isinterested = False
+        self.unchoke()  # Testing to see if this makes a difference
         activate_dict = {'kind': 'activate', 'address': self.getpeername()}
         self.torrent.switchboard.try_vis_handoff(activate_dict)
 
@@ -40,10 +41,7 @@ class Peer(object):
         return self.sock.getpeername()
 
     def read(self):
-        try:
-            bytes = self.sock.recv(self.max_size)
-        except:
-            self.kill_peer()
+        bytes = self.sock.recv(self.max_size)
         if len(bytes) == 0:
             print 'Got 0 bytes from fileno {}.'.format(self.fileno())
             self.torrent.kill_peer(self)
