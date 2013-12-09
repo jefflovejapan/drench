@@ -13,11 +13,15 @@ def build_dirs(files):
     Build necessary directories based on a list of file paths
     '''
     for i in files:
-        if len(i['path']) > 1:
-            addpath = os.path.join(*i['path'][:-1])
-            if addpath and addpath not in os.listdir(os.getcwd()):
-                os.makedirs(addpath)
-                print 'just made path', addpath
+        if type(i) is list:
+            build_dirs(i)
+            continue
+        else:
+            if len(i['path']) > 1:
+                addpath = os.path.join(*i['path'][:-1])
+                if addpath and addpath not in os.listdir(os.getcwd()):
+                    os.makedirs(addpath)
+                    print 'just made path', addpath
 
 
 def get_want_file_pos(file_list):

@@ -10,7 +10,6 @@ from math import ceil
 # https://wiki.theory.org/BitTorrentSpecification
 REQUEST_SIZE = 2 ** 14
 
-
 class Peer(object):
     # Can't initialize without a dictionary. Handshake
     # takes place using socket before peer init
@@ -44,9 +43,7 @@ class Peer(object):
         return self.sock.getpeername()
 
     def read(self):
-<<<<<<< HEAD
         bytes = self.sock.recv(self.max_size)
-=======
         '''
         Chain of events:
             - process_input
@@ -57,13 +54,6 @@ class Peer(object):
                         - Tell the switchboard to write it out
                         - init a new piece
         '''
-
-        try:
-            bytes = self.sock.recv(self.max_size)
-        except:
-            self.torrent.kill_peer(self)
-            return
->>>>>>> suicide
         if len(bytes) == 0:
             print 'Got 0 bytes from fileno {}.'.format(self.fileno())
             self.torrent.kill_peer(self)
