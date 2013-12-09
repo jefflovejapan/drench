@@ -78,9 +78,15 @@ class Torrent(object):
         if directory:
             os.chdir(directory)
         dirname = self.torrent_dict['info']['name']
+        file_list = []
+        if 'files' in self.torrent_dict['info']:
+            file_list.extend(self.torrent_dict['info']['files'])
+        elif 'name' in self.torrent_dict['info']:
+            file_list.append(self.torrent_dict['info']['name'])
+        else:
+            raise Exception('Invalid .torrent file')
         self.switchboard = Switchboard(dirname=dirname,
-                                       file_list=self.torrent_dict
-                                       ['info']['files'], piece_length=
+                                       file_list=file_list, piece_length=
                                        self.piece_length, num_pieces=
                                        self.num_pieces)
 
