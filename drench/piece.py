@@ -1,5 +1,4 @@
 from bitarray import bitarray
-import pudb
 
 
 class Piece(object):
@@ -14,28 +13,19 @@ class Piece(object):
         self.data = {}
 
     def save(self, index=None, bytes=None):
-        if index > len(self.bitfield) - 1:
-            pudb.set_trace()
         self.data[index] = bytes
         self.bitfield[index] = False
 
     def get_bytes(self):
         result = ''
-        try:
-            for i in sorted(self.data.keys()):
-                result += self.data.pop(i)
-        except:
-            pudb.set_trace()
-            raise Exception
+        for i in sorted(self.data.keys()):
+            result += self.data.pop(i)
         assert self.data == {}
         assert type(result) == str
         return result
 
     @property
     def complete(self):
-        if self.bitfield is None:
-            # pudb.set_trace()
-            raise Exception
         if any(self.bitfield):
             return False
         else:

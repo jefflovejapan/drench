@@ -4,7 +4,6 @@ import struct
 import random
 import hashlib
 from math import ceil
-import pudb
 
 
 # Number of simultaneous requests made to "prime the pump" after handshake
@@ -296,7 +295,6 @@ class Peer(object):
                      request_size=REQUEST_SIZE)
 
     def request_all(self):
-        print 'Inside request_all. self.piece is', self.piece
         if not self.piece:
             print 'returning from request_all because no piece'
             return
@@ -316,7 +314,6 @@ class Peer(object):
         byte_index = block_index * REQUEST_SIZE
         if (self.piece.index == self.torrent.last_piece and
                 byte_index == self.piece.last_block):
-            pudb.set_trace()
             request_size = self.get_last_block_size()
         else:
             request_size = REQUEST_SIZE
