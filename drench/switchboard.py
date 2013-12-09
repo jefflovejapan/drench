@@ -12,7 +12,6 @@ def build_dirs(files):
     '''
     Build necessary directories based on a list of file paths
     '''
-
     for i in files:
         if len(i['path']) > 1:
             addpath = os.path.join(*i['path'][:-1])
@@ -183,7 +182,7 @@ class Switchboard(object):
             rightmost = get_rightmost_index(byte_index=byte_index,
                                             file_starts=self.file_starts)
             if rightmost in self.want_file_pos:
-                return rightmost, byte_index
+                return rightmost, byte_index, block
             else:
                     file_start = (self.file_starts
                                   [rightmost])
@@ -209,11 +208,9 @@ class Switchboard(object):
     # method that returns files and byte ranges
 
     def write(self, byte_index, block):
-
-        file_list_index, write_byte_index = self.get_next_want_file(byte_index,
-                                                                    block)
-
-        if file_list_index is not None:
+        a = self.get_next_want_file(byte_index, block)
+        file_list_index, write_byte_index, block = a
+        if file_list_index and write_byte_index and block:
             index_in_want_files = self.want_file_pos.index(file_list_index)
 
             # The actual file object to write to
