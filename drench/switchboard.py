@@ -2,10 +2,21 @@ import os
 import bitarray
 import copy
 import json
+import pudb
 from collections import namedtuple
 
 
 start_end_pair = namedtuple('start_end_pair', 'start end')
+
+
+def all_subdirs(dir):
+    subdirs = []
+    dir_walker = os.walk(os.getcwd())
+    while 1:
+        try:
+            subdirs.append(dir_walker.next()[0])
+        except:
+            return subdirs
 
 
 def build_dirs(files):
@@ -18,8 +29,9 @@ def build_dirs(files):
             continue
         else:
             if len(i['path']) > 1:
-                addpath = os.path.join(*i['path'][:-1])
-                if addpath and addpath not in os.listdir(os.getcwd()):
+                addpath = os.path.join(os.getcwd(), *i['path'][:-1])
+                subdirs = all_subdirs(os.getcwd())
+                if addpath and addpath not in subdirs:
                     os.makedirs(addpath)
                     print 'just made path', addpath
 
@@ -299,7 +311,7 @@ class Switchboard(object):
             i.close()
 
 
-def main():
+def file_starts_test():
     from tparser import bdecode_file
     myinfo = bdecode_file('/Users/jeffblagdon/Desktop/dorian.torrent')['info']
     some_file_starts = get_file_starts(myinfo['files'])
@@ -312,5 +324,9 @@ def main():
     assert file_internal_index >= 0
 
 
+def all_subdirs_test():
+    print all_subdirs(os.getcwd())
+
+
 if __name__ == '__main__':
-    main()
+    all_subdirs_test()
