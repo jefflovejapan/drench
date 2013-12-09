@@ -195,7 +195,6 @@ class Torrent(object):
             if len(self.peer_dict) >= 30:
                 break
             s = socket.socket()
-            print s.fileno()
             s.setblocking(True)
             s.settimeout(0.5)
             try:

@@ -10,6 +10,7 @@ from math import ceil
 # https://wiki.theory.org/BitTorrentSpecification
 REQUEST_SIZE = 2 ** 14
 
+
 class Peer(object):
     # Can't initialize without a dictionary. Handshake
     # takes place using socket before peer init
@@ -43,7 +44,11 @@ class Peer(object):
         return self.sock.getpeername()
 
     def read(self):
-        bytes = self.sock.recv(self.max_size)
+        try:
+            bytes = self.sock.recv(self.max_size)
+        except:
+            self.torrent.kill_peer(self)
+            return
         '''
         Chain of events:
             - process_input
@@ -263,21 +268,16 @@ class Peer(object):
             return self.torrent.piece_length
 
     def init_piece(self):
-        if not self.valid_indices:
-            # We want a list of all indices where:
-            #   - We're interested in the piece
-            #     (i.e., it's in torrent.outfile.bitfield)
-            #   - The peer has the piece (it's available)
-            for i in range(self.torrent.num_pieces):
-                assert self.bitfield
-                if (self.torrent.switchboard.bitfield[i] is True
-                        and self.bitfield[i] is True):
-                    self.valid_indices.append(i)
-            if not self.valid_indices:
-                return
-            else:
-                random.shuffle(self.valid_indices)
-        index = self.valid_indices.pop()
+        valid_indices = []
+        for i in range(self.torrent.num_pieces):
+            assert self.bitfield
+            if (self.torrent.switchboard.bitfield[i] is True
+                    and self.bitfield[i] is True):
+                valid_indices.append(i)
+        if not valid_indices:
+            return
+        else:
+            index = random.choice(valid_indices)
         length = self.get_piece_length(index)
         if index is self.torrent.last_piece:
             num_blocks = int(ceil(float(length) / REQUEST_SIZE))
@@ -288,7 +288,6 @@ class Peer(object):
 
     def request_all(self):
         if not self.piece:
-            print 'returning from request_all because no piece'
             return
         print 'requesting all for piece', self.piece.index
         for i in xrange(self.piece.num_blocks):
