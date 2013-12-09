@@ -79,6 +79,8 @@ class Torrent(object):
             os.chdir(directory)
         dirname = self.torrent_dict['info']['name']
         file_list = []
+        # TODO -- figure out if this is really how I want to deal with
+        # single-file torrents
         if 'files' in self.torrent_dict['info']:
             file_list.extend(self.torrent_dict['info']['files'])
         elif 'name' in self.torrent_dict['info']:
