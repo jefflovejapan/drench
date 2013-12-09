@@ -233,14 +233,14 @@ class Peer(object):
 
                 # Write out
                 byte_index = piece_index * self.torrent.piece_length
-                self.torrent.switchboard.write(byte_index, block)
+                self.torrent.switchboard.write(byte_index, piece_bytes)
                 self.torrent.switchboard.mark_off(piece_index)
                 print self.torrent.switchboard.bitfield
                 if self.torrent.switchboard.complete:
                     print '\nDownload complete\n'
                     self.reactor.is_running = False
             else:
-                pudb.set_trace()
+                print "Bad data -- hash doesn't match. Discarding piece."
             self.piece = self.init_piece()
             self.request_all()
 
@@ -248,7 +248,7 @@ class Peer(object):
         print 'pcancel'
 
     def read_timeout(self):
-        pudb.set_trace()
+        print 'Timeout on read attempt. Re-requesting piece.'
         self.request_all()
 
     def interested(self):
@@ -292,8 +292,6 @@ class Peer(object):
             num_blocks = int(ceil(float(length) / REQUEST_SIZE))
         else:
             num_blocks = int(ceil(float(length) / REQUEST_SIZE))
-        if (index is None or num_blocks is None):
-            pudb.set_trace()
         return Piece(index=index, num_blocks=num_blocks,
                      request_size=REQUEST_SIZE)
 
