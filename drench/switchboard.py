@@ -13,7 +13,7 @@ def build_dirs(files):
     '''
     Build necessary directories based on a list of file paths
     '''
-    # pudb.set_trace()
+    pudb.set_trace()
     for i in files:
         if len(i['path']) > 1:
             addpath = os.path.join(*i['path'][:-1])
@@ -210,11 +210,13 @@ class Switchboard(object):
     # method that returns files and byte ranges
 
     def write(self, byte_index, block):
+        pudb.set_trace()
         try:
             file_list_index, write_byte_index = self.get_next_want_file(byte_index,
                                                                         block)
         except:
             pudb.set_trace()
+            return
 
         if file_list_index is not None and write_byte_index is not None:
             try:

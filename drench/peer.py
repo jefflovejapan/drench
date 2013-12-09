@@ -294,24 +294,36 @@ class Peer(object):
             num_blocks = int(ceil(float(length) / REQUEST_SIZE))
         if (index is None or num_blocks is None):
             pudb.set_trace()
-        return Piece(index=index, num_blocks=num_blocks)
+        return Piece(index=index, num_blocks=num_blocks,
+                     request_size=REQUEST_SIZE)
 
     def request_all(self):
+        print 'Inside request_all. self.piece is', self.piece
+        if not self.piece:
+            print 'returning from request_all because no piece'
+            return
         print 'requesting all for piece', self.piece.index
         for i in xrange(self.piece.num_blocks):
-            self.request_block(i, self.torrent.piece_length)
+            self.request_block(i)
         request_dict = {'kind': 'request',
                         'peer': self.sock.getpeername(),
                         'piece': self.piece.index}
         self.torrent.switchboard.try_vis_handoff(request_dict)
         print 'next request:', request_dict
 
-    def request_block(self, block_index, piece_length):
-        subindex = block_index * REQUEST_SIZE
-        assert piece_length % REQUEST_SIZE == 0
+    def get_last_block_size(self):
+        return self.torrent.last_piece_length % REQUEST_SIZE
 
+    def request_block(self, block_index):
+        byte_index = block_index * REQUEST_SIZE
+        if (self.piece.index == self.torrent.last_piece and
+                byte_index == self.piece.last_block):
+            pudb.set_trace()
+            request_size = self.get_last_block_size()
+        else:
+            request_size = REQUEST_SIZE
         packet = ''.join(struct.pack('!ibiii', 13, 6, self.piece.index,
-                                     subindex, REQUEST_SIZE))
+                                     byte_index, request_size))
         bytes = self.sock.send(packet)
         if bytes != len(packet):
             raise Exception('couldnt send request')

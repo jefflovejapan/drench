@@ -26,6 +26,7 @@ class Piece(object):
                 result += self.data.pop(i)
         except:
             pudb.set_trace()
+            raise Exception
         assert self.data == {}
         assert type(result) == str
         return result
@@ -33,7 +34,8 @@ class Piece(object):
     @property
     def complete(self):
         if self.bitfield is None:
-            pudb.set_trace()
+            # pudb.set_trace()
+            raise Exception
         if any(self.bitfield):
             return False
         else:
