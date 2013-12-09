@@ -3,12 +3,14 @@ import pudb
 
 
 class Piece(object):
-    def __init__(self, index=None, num_blocks=None):
+    def __init__(self, index=None, num_blocks=None, request_size=None):
         assert index is not None
         assert num_blocks is not None
+        assert request_size is not None
         self.index = index
         self.bitfield = bitarray('1' * num_blocks)
         self.num_blocks = num_blocks
+        self.request_size = request_size
         self.data = {}
 
     def save(self, index=None, bytes=None):
@@ -36,6 +38,10 @@ class Piece(object):
             return False
         else:
             return True
+
+    @property
+    def last_block(self):
+        return (self.num_blocks - 1) * self.request_size
 
 
 def tests():
