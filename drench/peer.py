@@ -77,7 +77,6 @@ class Peer(object):
 
             # If we already have a partial message, start with that
             if self.save_state['remainder']:
-                print 'We have a remainder at the top of get_message_length'
                 instr = self.save_state['remainder'] + instr
                 self.save_state['remainder'] = ''
 

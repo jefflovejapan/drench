@@ -161,15 +161,23 @@ def build_bitfield(heads_and_tails=[], num_pieces=0):
 
 class Switchboard(object):
     def __init__(self, dirname='', file_list=[], piece_length=0, num_pieces=0,
-                 multifile=False):
+                 multifile=False, download_all=False):
         self.dirname = dirname
         self.file_list = copy.deepcopy(file_list)
         self.piece_length = piece_length
         self.num_pieces = num_pieces
         self.file_starts = (get_file_starts(self.file_list) if multifile
                             else [0])
-        self.want_file_pos = (get_want_file_pos(self.file_list) if multifile
-                              else [0])
+
+        self.download_all = download_all
+
+        if self.download_all:
+            self.want_file_pos = range(len(self.file_list))
+        elif multifile:
+            self.want_file_pos = (get_want_file_pos(self.file_list))
+        else:
+            self.want_file_pos = [0]
+
         self.outfiles = []
         self.queued_messages = []
         self.vis_write_sock = None

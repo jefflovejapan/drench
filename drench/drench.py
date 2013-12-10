@@ -60,12 +60,14 @@ class VisListener(Listener):
 
 class Torrent(object):
 
-    def __init__(self, torrent_path, directory='', port=55308):
+    def __init__(self, torrent_path, directory='', port=55308,
+                 download_all=False):
         torrent_dict = tparser.bdecode_file(torrent_path)
         self.torrent_dict = torrent_dict
         self.peer_dict = {}
         self.peer_ips = []
         self.port = port
+        self.download_all = download_all
         self.r = None
         self.tracker_response = None
         self.peer_dict = {}
@@ -102,7 +104,8 @@ class Torrent(object):
         self.switchboard = Switchboard(dirname=dirname,
                                        file_list=file_list, piece_length=
                                        self.piece_length, num_pieces=
-                                       self.num_pieces, multifile=multifile)
+                                       self.num_pieces, multifile=multifile,
+                                       download_all=download_all)
 
     @property
     def piece_length(self):
@@ -283,11 +286,16 @@ def main():
     argparser.add_argument('-d', '--directory', nargs='?', default=DEFAULT_DIR,
                            help=('Where to save downloaded files. Default '
                                  'is {}'.format(DEFAULT_DIR)))
+    argparser.add_argument('-a', '--all', action='store_true',
+                           help=('Set flag to download all files in torrent'),
+                           default=False)
     args = argparser.parse_args()  # Getting path from command line
     torrent_path = get_path(args.torrent_path)
     directory = get_path(args.directory)
     port = args.port
-    mytorrent = Torrent(torrent_path, directory=directory, port=port)
+    download_all = args.all
+    mytorrent = Torrent(torrent_path, directory=directory, port=port,
+                        download_all=download_all)
     with mytorrent:
         mytorrent.tracker_request()
         mytorrent.handshake_peers()
