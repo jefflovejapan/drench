@@ -77,20 +77,32 @@ class Torrent(object):
                                     VisListener(torrent=self, port=8035)])
         if directory:
             os.chdir(directory)
-        dirname = self.torrent_dict['info']['name']
+        if 'files' in self.torrent_dict['info']:
+            dirname = self.torrent_dict['info']['name']
+        else:
+            dirname = None
         file_list = []
-        # TODO -- figure out if this is really how I want to deal with
-        # single-file torrents
+
+        # Multifile case
         if 'files' in self.torrent_dict['info']:
             file_list.extend(self.torrent_dict['info']['files'])
+            multifile = True
+
+        # Deal with single-file torrents by building up the kind of dict
+        # found in torrent_dict['info']['files']
         elif 'name' in self.torrent_dict['info']:
-            file_list.append(self.torrent_dict['info']['name'])
+            info_dict = {}
+            info_dict['path'] = self.torrent_dict['info']['name']
+            info_dict['length'] = self.torrent_dict['info']['length']
+            file_list.append(info_dict)
+            multifile = False
         else:
             raise Exception('Invalid .torrent file')
+
         self.switchboard = Switchboard(dirname=dirname,
                                        file_list=file_list, piece_length=
                                        self.piece_length, num_pieces=
-                                       self.num_pieces)
+                                       self.num_pieces, multifile=multifile)
 
     @property
     def piece_length(self):
@@ -106,7 +118,11 @@ class Torrent(object):
 
     @property
     def length(self):
-        return sum([i['length'] for i in self.torrent_dict['info']['files']])
+        if 'files' in self.torrent_dict['info']:
+            return sum([i['length'] for i in
+                       self.torrent_dict['info']['files']])
+        else:
+            return self.torrent_dict['info']['length']
 
     @property
     def last_piece_length(self):

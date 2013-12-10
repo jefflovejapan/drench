@@ -289,7 +289,6 @@ class Peer(object):
     def request_all(self):
         if not self.piece:
             return
-        print 'requesting all for piece', self.piece.index
         for i in xrange(self.piece.num_blocks):
             self.request_block(i)
         request_dict = {'kind': 'request',

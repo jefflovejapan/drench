@@ -160,23 +160,31 @@ def build_bitfield(heads_and_tails=[], num_pieces=0):
 
 
 class Switchboard(object):
-    def __init__(self, dirname='', file_list=[], piece_length=0, num_pieces=0):
+    def __init__(self, dirname='', file_list=[], piece_length=0, num_pieces=0,
+                 multifile=False):
         self.dirname = dirname
         self.file_list = copy.deepcopy(file_list)
         self.piece_length = piece_length
         self.num_pieces = num_pieces
-        self.file_starts = get_file_starts(self.file_list)
-        self.want_file_pos = get_want_file_pos(self.file_list)
+        self.file_starts = (get_file_starts(self.file_list) if multifile
+                            else [0])
+        self.want_file_pos = (get_want_file_pos(self.file_list) if multifile
+                              else [0])
         self.outfiles = []
         self.queued_messages = []
         self.vis_write_sock = None
-        os.mkdir(self.dirname)
-        os.chdir(os.path.join(os.getcwd(), self.dirname))
+        if self.dirname:
+            os.mkdir(self.dirname)
+            os.chdir(os.path.join(os.getcwd(), self.dirname))
         want_files = [self.file_list[index] for index in self.want_file_pos]
-        build_dirs(want_files)
+        if multifile:
+            build_dirs(want_files)
         for i in self.want_file_pos:
-            thisfile = open(os.path.join(*self.file_list[i]
-                                         ['path']), 'w')
+            if multifile:
+                thisfile = open(os.path.join(*self.file_list[i]
+                                             ['path']), 'w')
+            else:
+                thisfile = open(self.file_list[i]['path'], 'w')
             self.outfiles.append(thisfile)
         self.heads_and_tails = get_heads_tails(want_file_pos=
                                                self.want_file_pos,
@@ -219,13 +227,23 @@ class Switchboard(object):
         self.switchboard.vis_write_sock = sock
 
     # TODO -- refactor write to simply map from a piece index to a set
-    # of files and byte indices. Write should contain a call to another
-    # method that returns files and byte ranges
+    # of files and byte indices so I can implement seeding.
+    # Write should contain a call to another method that returns
+    # files and byte ranges
 
     def write(self, byte_index, block):
-        a = self.get_next_want_file(byte_index, block)
-        file_list_index, write_byte_index, block = a
-        if file_list_index and write_byte_index and block:
+
+        # TODO -- is there a way to catch this exception earlier?
+        try:
+            a = self.get_next_want_file(byte_index, block)
+            file_list_index, write_byte_index, block = a
+        except:
+            return
+
+        # TODO -- re-think this test
+        if (file_list_index is not None and write_byte_index is not None and
+                block is not ''):
+
             index_in_want_files = self.want_file_pos.index(file_list_index)
 
             # The actual file object to write to
