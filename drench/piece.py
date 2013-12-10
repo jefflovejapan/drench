@@ -1,5 +1,4 @@
 from bitarray import bitarray
-import pudb
 
 
 class Piece(object):
@@ -15,8 +14,6 @@ class Piece(object):
 
     def save(self, index=None, bytes=None):
         self.data[index] = bytes
-        if index >= len(self.bitfield):
-            pudb.set_trace()
         self.bitfield[index] = False
 
     def get_bytes(self):

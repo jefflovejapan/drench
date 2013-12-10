@@ -203,6 +203,12 @@ class Peer(object):
         one or more files
         '''
         piece_index, byte_begin = struct.unpack('!ii', content[0:8])
+
+        # TODO -- figure out a better way to catch this error.
+        # How is piece_index getting swapped out from under me?
+        if piece_index != self.piece.index:
+            return
+
         assert byte_begin % REQUEST_SIZE == 0
         block_begin = byte_begin / REQUEST_SIZE
         block = content[8:]
