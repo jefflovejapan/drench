@@ -4,40 +4,9 @@
   (function () {
    /*global window */
    /*global WebSocket */
-   window.THEWEBSOCKET = new WebSocket("ws://blagdons-macbook-air-2.local:8001");
-   window.onbeforeunload = function () { window.THEWEBSOCKET.close(); };
-   window.peers = [];
-   var files = [];
-   // var peers = [];
-   var want_file_pos = [];
-   var w = window.innerWidth;
-   var h = window.innerHeight;
-   var xScale;
-   var padding = 1;
-   var bar_height = 20;
-   var piece_height = 10;
-   var piece_width = 10;
-   var piece_y = Math.floor(bar_height / 2) - Math.floor(piece_height / 2);
-   var colors = [];
-   var color_scale_10 = d3.scale.category10();
-   var color_scale_20 = d3.scale.category20c();
-
-   var build_model = function (init_dict) {
-     want_file_pos = init_dict.want_file_pos;
-     want_file_pos.forEach( function(want_index, i) {
-       files[i] = {};
-       var head_and_tail = init_dict.heads_and_tails[i];
-       files[i].path = init_dict.files[want_index].path;
-       files[i].relevant = [];
-       for (var j = head_and_tail[0]; j <= head_and_tail[1]; j++) {
-         files[i].relevant.push(j);
-       }
-     });
-     set_colors();
-     draw_svg();
-   };
-
-   var set_colors = function () {
+  
+   var build_colors = function () {
+    var colors = [];
     console.log('Inside set_colors');
     for (var i = 0; i < 30; i++ ) {
       if (i < 10) {
@@ -52,8 +21,39 @@
         console.log(colors);
       }
     }
-    console.log(colors);
-  }
+    return colors;
+  };
+
+   var peers = {};
+   var files = [];
+   var want_file_pos = [];
+   var w = window.innerWidth;
+   var h = window.innerHeight;
+   var xScale;
+   var padding = 1;
+   var bar_height = 20;
+   var piece_height = 10;
+   var piece_width = 10;
+   var piece_y = Math.floor(bar_height / 2) - Math.floor(piece_height / 2);
+   var color_scale_10 = d3.scale.category10();
+   var color_scale_20 = d3.scale.category20c();
+   var colors = build_colors();
+   window.THEWEBSOCKET = new WebSocket("ws://blagdons-macbook-air-2.local:8001");
+   window.onbeforeunload = function () { window.THEWEBSOCKET.close(); };
+
+   var build_model = function (init_dict) {
+     want_file_pos = init_dict.want_file_pos;
+     want_file_pos.forEach( function(want_index, i) {
+       files[i] = {};
+       var head_and_tail = init_dict.heads_and_tails[i];
+       files[i].path = init_dict.files[want_index].path;
+       files[i].relevant = [];
+       for (var j = head_and_tail[0]; j <= head_and_tail[1]; j++) {
+         files[i].relevant.push(j);
+       }
+     });
+     draw_svg();
+   };
 
   var draw_svg = function () {
    xScale = d3.scale.linear()
@@ -131,12 +131,7 @@
  };
 
  var get_color = function (ip) {
-  for (var i = 0; i < colors.length; i++) {
-    if (peers[i].ip === ip) {
-      return peers[i].color;
-    }
-  console.log('No color for peer');
-  }
+  return peers[ip];
 };
  
  var vis_write = function (write_dict) {
@@ -149,9 +144,10 @@
  };
 
  var build_peer = function (peer_dict) {
-    console.log(colors);
-    var this_peer = {"ip": peer_dict.address.join(":"), "color": colors.shift()};
-    peers.push(this_peer);
+    console.log('inside build_peer '+ colors[0]);
+    var ip = peer_dict.address.join(":");
+    var color = colors.shift();
+    peers[ip] = color;
   };
 
   window.THEWEBSOCKET.onmessage = function (chunk) {
