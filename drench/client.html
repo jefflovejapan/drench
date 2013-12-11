@@ -79,7 +79,7 @@
    .append("text")
    .text(function (d) { return d.path.join('/'); })
    .attr("x", 50)
-   .attr("y", function (d, i) { return (i*60) + 60; })
+   .attr("y", function (d, i) { return (i*30) + 30; })
    .attr("text-size", 30)
    .attr("font", "sans-serif");
 
@@ -98,7 +98,7 @@
    .append("g")
    .attr("class", "piece_bucket")
    .attr("transform", function(d, i) {
-    return "translate(60," + ((i*60) + 60) + ")";
+    return "translate(60," + ((i*30) + 30) + ")";
   })
    .attr("id", function (d, i) { return ("piece_bucket" + i); })
    .append("rect")
