@@ -6,9 +6,9 @@
    /*global WebSocket */
    window.THEWEBSOCKET = new WebSocket("ws://blagdons-macbook-air-2.local:8001");
    window.onbeforeunload = function () { window.THEWEBSOCKET.close(); };
-
+   window.peers = [];
    var files = [];
-   var peers = [];
+   // var peers = [];
    var want_file_pos = [];
    var w = window.innerWidth;
    var h = window.innerHeight;
@@ -18,7 +18,7 @@
    var piece_height = 10;
    var piece_width = 10;
    var piece_y = Math.floor(bar_height / 2) - Math.floor(piece_height / 2);
-   var colors = []
+   var colors = [];
    var color_scale_10 = d3.scale.category10();
    var color_scale_20 = d3.scale.category20c();
 
@@ -38,13 +38,18 @@
    };
 
    var set_colors = function () {
+    console.log('Inside set_colors');
     for (var i = 0; i < 30; i++ ) {
       if (i < 10) {
-        color = color_scale_10(i);
+        var color = color_scale_10(i);
+        console.log(color, i);
         colors.push(color);
+        console.log(colors);
       } else {
         var color = color_scale_20(i - 10);
+        console.log(color, i);
         colors.push(color);
+        console.log(colors);
       }
     }
     console.log(colors);
@@ -130,6 +135,7 @@
     if (peers[i].ip === ip) {
       return peers[i].color;
     }
+  console.log('No color for peer');
   }
 };
  
@@ -143,6 +149,7 @@
  };
 
  var build_peer = function (peer_dict) {
+    console.log(colors);
     var this_peer = {"ip": peer_dict.address.join(":"), "color": colors.shift()};
     peers.push(this_peer);
   };
@@ -153,22 +160,25 @@
     messages.forEach( function (message) {
      try {
       var meat = JSON.parse(message);
-    } catch (e) {
-      console.log(e);
-    }
-     if (meat.kind === "init") {
+      console.log(meat);
+      if (meat.kind === "init") {
        build_model(meat);
      } else if (meat.kind === "request") {
        vis_request(meat);
      } else if (meat.kind === "piece") {
        vis_write(meat);
-     } else if (meat.kind == "activate") {
-        build_peer(meat);
+     } else if (meat.kind === "activate") {
+      console.log("Activate");
+      build_peer(meat);
     } else {
      throw "Data kind invalid";
    }
- }
- )
+ } catch (e) {
+  console.log("Parsing failed");
+  console.log(e);
+}
+}
+)
   };
 
   var send_piece = function (piece_no) {
