@@ -37,6 +37,7 @@
   var bar_height = 16;
   var piece_height = 10;
   var piece_width = 10;
+  var piece_duration = 500;
   var text_size = 10;
   var piece_y = Math.floor(bar_height / 2) - Math.floor(piece_height / 2);
   var color_scale_10 = d3.scale.category10();
@@ -108,7 +109,26 @@
   .attr("height", piece_height - padding)
   .attr("width", piece_width - padding)
   .attr("fill", "blue")
-  .attr("opacity", 0);
+  .attr("opacity", 0)
+  .on("mouseover", function (d) {
+    var xPosition = parseFloat(d3.select(this).attr("x"));
+    var yPosition = parseFloat(d3.select(this).attr("y"));
+    console.log("xPosition: " + xPosition + " yPosition: " + yPosition);
+    // TODO -- don't think this is what I want to append to
+    d3.select(this).append("svg")
+      .attr("id", "#tooltip")
+      .attr("x", xPosition)
+      .attr("y", yPosition)
+      .attr("width", 100)
+      .attr("height", 100)
+      .attr("fill", "blue");
+    //   .attr("text-anchor", "middle")
+    //   .attr("font-family", "sans-serif")
+    //   .attr("font-size", "11px")
+    //   .attr("font-weight", "bold")
+    //   .attr("fill", "black")
+    //   .text(d);
+  });
 };
 
 var vis_request = function (req_dict) {
@@ -126,7 +146,7 @@ var vis_write = function (write_dict) {
  d3.selectAll("rect.piece" + piece_index)
  .attr("fill", get_color(ip))
  .transition()
- .duration(1000)
+ .duration(piece_duration)
  .attr("opacity", 1);
 };
 
