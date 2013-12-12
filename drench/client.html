@@ -39,6 +39,7 @@
   var piece_width = 10;
   var piece_duration = 500;
   var text_size = 10;
+  var parent_svg;
   var piece_y = Math.floor(bar_height / 2) - Math.floor(piece_height / 2);
   var color_scale_10 = d3.scale.category10();
   var color_scale_20 = d3.scale.category20c();
@@ -111,23 +112,30 @@
   .attr("fill", "blue")
   .attr("opacity", 0)
   .on("mouseover", function (d) {
+    console.log("this", this);
+    console.log("d", d);
     var xPosition = parseFloat(d3.select(this).attr("x"));
     var yPosition = parseFloat(d3.select(this).attr("y"));
-    console.log("xPosition: " + xPosition + " yPosition: " + yPosition);
-    // TODO -- don't think this is what I want to append to
-    d3.select(this).append("svg")
+    console.log("xPosition: " + xPosition + " yPosition: " + yPosition + " parent_svg: " + parent_svg);
+
+    d3.select(this.parentNode)
+      .append("rect")
       .attr("id", "#tooltip")
       .attr("x", xPosition)
       .attr("y", yPosition)
       .attr("width", 100)
       .attr("height", 100)
-      .attr("fill", "blue");
-    //   .attr("text-anchor", "middle")
-    //   .attr("font-family", "sans-serif")
-    //   .attr("font-size", "11px")
-    //   .attr("font-weight", "bold")
-    //   .attr("fill", "black")
-    //   .text(d);
+      .attr("fill", "blue")
+      .attr("opacity", 0)
+      .transition()
+      .duration(300)
+      .attr("opacity", 1)
+      .attr("text-anchor", "middle")
+      .attr("font-family", "sans-serif")
+      .attr("font-size", "11px")
+      .attr("font-weight", "bold")
+      .attr("fill", "black")
+      .text(d);
   });
 };
 
@@ -149,6 +157,8 @@ var vis_write = function (write_dict) {
  .duration(piece_duration)
  .attr("opacity", 1);
 };
+
+
 
 var build_peer = function (peer_dict) {
   console.log('inside build_peer '+ colors[0]);
