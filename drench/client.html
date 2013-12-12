@@ -1,21 +1,22 @@
 <head><script src="http://d3js.org/d3.v3.js" charset="utf-8"></script></head>
 <body>
   <script type="text/javascript">
-  (function () {
+  window.mything = function () {
    /*global window */
    /*global WebSocket */
-  
+
    var build_colors = function () {
     var colors = [];
     console.log('Inside set_colors');
     for (var i = 0; i < 30; i++ ) {
+      var color;
       if (i < 10) {
-        var color = color_scale_10(i);
+        color = color_scale_10(i);
         console.log(color, i);
         colors.push(color);
         console.log(colors);
       } else {
-        var color = color_scale_20(i - 10);
+        color = color_scale_20(i - 10);
         console.log(color, i);
         colors.push(color);
         console.log(colors);
@@ -24,167 +25,146 @@
     return colors;
   };
 
-   var peers = {};
-   var files = [];
-   var want_file_pos = [];
-   var w = window.innerWidth;
-   var h = window.innerHeight;
-   var xScale;
-   var padding = 1;
-   var bar_height = 20;
-   var piece_height = 10;
-   var piece_width = 10;
-   var piece_y = Math.floor(bar_height / 2) - Math.floor(piece_height / 2);
-   var color_scale_10 = d3.scale.category10();
-   var color_scale_20 = d3.scale.category20c();
-   var colors = build_colors();
-   window.THEWEBSOCKET = new WebSocket("ws://blagdons-macbook-air-2.local:8001");
-   window.onbeforeunload = function () { window.THEWEBSOCKET.close(); };
+  var peers = {};
+  var files = [];
+  var want_file_pos = [];
+  var window_width = window.innerWidth;
+  var window_height = window.innerHeight;
+  var xScale;
+  var padding = 1;
+  var bar_height = 20;
+  var piece_height = 10;
+  var piece_width = 10;
+  var piece_y = Math.floor(bar_height / 2) - Math.floor(piece_height / 2);
+  var color_scale_10 = d3.scale.category10();
+  var color_scale_20 = d3.scale.category20c();
+  var colors = build_colors();
+  window.THEWEBSOCKET = new WebSocket("ws://blagdons-macbook-air-2.local:8001");
+  window.onbeforeunload = function () { window.THEWEBSOCKET.close(); };
 
-   var build_model = function (init_dict) {
-     want_file_pos = init_dict.want_file_pos;
-     want_file_pos.forEach( function(want_index, i) {
-       files[i] = {};
-       var head_and_tail = init_dict.heads_and_tails[i];
-       files[i].path = init_dict.files[want_index].path;
-       files[i].relevant = [];
-       for (var j = head_and_tail[0]; j <= head_and_tail[1]; j++) {
-         files[i].relevant.push(j);
-       }
-     });
-     draw_svg();
-   };
-
-  var draw_svg = function () {
-   xScale = d3.scale.linear()
-   .domain([0, d3.max(files, function (d) { return d.relevant.length; } )])
-   .range([0, w]);
-
-   var svg = d3.select("body")
-   .append("svg")
-   .attr("width", w)
-   .attr("height", h);
-
-   var bigRect = svg.append("rect")
-   .attr("x", 0)
-   .attr("y", 0)
-   .attr("width", w)
-   .attr("height", h)
-   .attr("fill", "blue")
-   .attr("opacity", 0.2);
-
-   var texty = svg.selectAll("text")                      
-   .data(files)
-   .enter()
-   .append("text")
-   .text(function (d) { return d.path.join('/'); })
-   .attr("x", 50)
-   .attr("y", function (d, i) { return (i*30) + 30; })
-   .attr("text-size", 30)
-   .attr("font", "sans-serif");
-
-   var clientCircle = svg.append("circle")
-   .attr("cx", Math.floor(w/2))
-   .attr("cy", Math.floor(h/2))
-   .attr("r", Math.floor(h/2))
-   .attr("fill", "olive")
-   .attr("stroke", "orange")
-   .attr("stroke-width", 5)
-   .attr("opacity", 0.2);
-
-   var piece_buckets = svg.selectAll("g.piece_bucket")
-   .data(files)
-   .enter()
-   .append("g")
-   .attr("class", "piece_bucket")
-   .attr("transform", function(d, i) {
-    return "translate(60," + ((i*30) + 30) + ")";
-  })
-   .attr("id", function (d, i) { return ("piece_bucket" + i); })
-   .append("rect")
-   .attr("class", "bar")
-   .attr("x", 0)
-   .attr("width", function (d) { 
-    return 10 * d.relevant.length + padding;
-  })
-   .attr("height", bar_height)
-   .attr("fill", "red")
-   .attr("opacity", 0.2);
-
-   var pieces = svg.selectAll("g.piece_bucket")
-   .selectAll("rect.piece")
-   .data(function (d) { return d.relevant; })
-   .enter()
-   .append("rect")
-   .attr("class", "piece")
-   .attr("class", function (d) { return ("piece" + d); })
-   .attr("x", function (d, i) { return padding + i * 10; })
-   .attr("y", piece_y)
-   .attr("height", piece_height - padding)
-   .attr("width", piece_width - padding)
-   .attr("fill", "blue")
-   .attr("opacity", 0.1);
-
- };
- 
- var vis_request = function (req_dict) {
+  var build_model = function (init_dict) {
+   console.log("inside build_model");
+   want_file_pos = init_dict.want_file_pos;
+   want_file_pos.forEach( function(want_index, i) {
+     files[i] = {};
+     var head_and_tail = init_dict.heads_and_tails[i];
+     files[i].path = init_dict.files[want_index].path;
+     files[i].relevant = [];
+     for (var j = head_and_tail[0]; j <= head_and_tail[1]; j++) {
+       files[i].relevant.push(j);
+     }
+   });
+   draw_svgs();
  };
 
- var get_color = function (ip) {
-  return peers[ip];
+ var draw_svgs = function () {
+  var divs = d3.select("body")
+  .selectAll("div")
+  .data(files)
+  .enter()
+  .append("div")
+  .style("height", 100);
+
+  var texts = divs.append("text")
+  .text(function (d) { return d.path.join('/'); })
+  .attr("text-size", 30)
+  .attr("font", "sans-serif")
+  .attr("y", 30);
+
+  var svgs = divs.append("svg");
+
+  var bars = svgs.append("rect")
+  .attr("class", "bar")
+  .attr("id", function (d, i) {
+    return "#bar" + d.ip;
+  })
+  .attr("x", 0)
+  .attr("y", 0)
+  .attr("width", function (d) { 
+   return 10 * d.relevant.length + padding;
+ })
+  .attr("height", bar_height)
+  .attr("fill", "red")
+  .attr("opacity", 0.2)
+  .attr("id", function (d, i) {return ("#bar" + i); });
+
+
+  console.log("o hai");
+
+
+  var pieces = svgs.selectAll("rect.piece")
+  .data(function (d) { return d.relevant; })
+  .enter()
+  .append("rect")
+  .attr("class", "piece")
+  .attr("class", function (d) { return ("piece" + d); })
+  .attr("x", function (d, i) { return padding + i * piece_width; })
+  .attr("y", piece_y)
+  .attr("height", piece_height - padding)
+  .attr("width", piece_width - padding)
+  .attr("fill", "blue")
+  .attr("opacity", 0.1);
 };
- 
- var vis_write = function (write_dict) {
-   var piece_index = write_dict.piece_index;
-   d3.selectAll("rect.piece" + piece_index)
-   .attr("fill", get_color(write_dict.peer.join(":")))
-   .transition()
-   .duration(1000)
-   .attr("opacity", 1);
- };
 
- var build_peer = function (peer_dict) {
-    console.log('inside build_peer '+ colors[0]);
-    var ip = peer_dict.address.join(":");
-    var color = colors.shift();
-    peers[ip] = color;
-  };
+var vis_request = function (req_dict) {
+};
 
-  window.THEWEBSOCKET.onmessage = function (chunk) {
-    console.log('Received a message');
-    var messages = chunk.data.split('\r\n\r\n')
-    messages.forEach( function (message) {
-     try {
-      var meat = JSON.parse(message);
-      console.log(meat);
-      if (meat.kind === "init") {
-       build_model(meat);
-     } else if (meat.kind === "request") {
-       vis_request(meat);
-     } else if (meat.kind === "piece") {
-       vis_write(meat);
-     } else if (meat.kind === "activate") {
-      console.log("Activate");
-      build_peer(meat);
-    } else {
-     throw "Data kind invalid";
-   }
- } catch (e) {
+var get_color = function (ip) {
+  // return peers[ip];
+};
+
+var vis_write = function (write_dict) {
+ // var piece_index = write_dict.piece_index;
+ // d3.selectAll("rect.piece" + piece_index)
+ // .attr("fill", get_color(write_dict.peer.join(":")))
+ // .transition()
+ // .duration(1000)
+ // .attr("opacity", 1);
+};
+
+var build_peer = function (peer_dict) {
+  // console.log('inside build_peer '+ colors[0]);
+  // var ip = peer_dict.address.join(":");
+  // var color = colors.shift();
+  // peers[ip] = color;
+};
+
+window.THEWEBSOCKET.onmessage = function (chunk) {
+  console.log('Received a message');
+  var messages = chunk.data.split('\r\n\r\n');
+  messages.forEach( function (message) {
+   try {
+    var meat = JSON.parse(message);
+    console.log(meat);
+    if (meat.kind === "init") {
+     build_model(meat);
+   } else if (meat.kind === "request") {
+     vis_request(meat);
+   } else if (meat.kind === "piece") {
+     vis_write(meat);
+   } else if (meat.kind === "activate") {
+    console.log("Activate");
+    build_peer(meat);
+  } else {
+   throw "Data kind invalid";
+ }
+} catch (e) {
   console.log("Parsing failed");
   console.log(e);
 }
 }
-)
-  };
+);
+};
 
-  var send_piece = function (piece_no) {
-    var template = {"peer": ["46.165.240.14", 50035], "kind": "piece", "piece_index": NaN};
-    template.piece_index = Math.floor(Math.random() * 50);
-    window.THEWEBSOCKET.send(JSON.stringify(template));
-  }
+var send_piece = function (piece_no) {
+  var template = {"peer": ["46.165.240.14", 50035], "kind": "piece", "piece_index": NaN};
+  template.piece_index = Math.floor(Math.random() * 50);
+  window.THEWEBSOCKET.send(JSON.stringify(template));
+};
 
-  window.addEventListener("click", send_piece); 
+window.addEventListener("click", send_piece); 
 
-}) ();
+};
+mything();
 </script>
 </body>
