@@ -111,7 +111,7 @@
   .attr("width", piece_width - padding)
   .attr("fill", "blue")
   .attr("opacity", 0)
-  .on("mouseover", function (d) {
+  .on("mouseover", function (d, i, j) {
     console.log("this", this);
     console.log("d", d);
     var xPosition = parseFloat(d3.select(this).attr("x"));
@@ -120,7 +120,6 @@
 
     d3.select(this.parentNode)
       .append("rect")
-      .attr("id", "#tooltip")
       .attr("x", xPosition)
       .attr("y", yPosition)
       .attr("width", 100)
@@ -129,13 +128,12 @@
       .attr("opacity", 0)
       .transition()
       .duration(300)
-      .attr("opacity", 1)
-      .attr("text-anchor", "middle")
-      .attr("font-family", "sans-serif")
-      .attr("font-size", "11px")
-      .attr("font-weight", "bold")
-      .attr("fill", "black")
-      .text(d);
+      .attr("opacity", 1);
+
+// j is the index of the parent element
+    d3.select(divs[0][j])
+        .append("text")
+        .text(d);
   });
 };
 
