@@ -26,15 +26,18 @@
   };
 
   var peers = {};
+  var pieces = {};
   var files = [];
   var want_file_pos = [];
   var window_width = window.innerWidth;
   var window_height = window.innerHeight;
   var xScale;
+  var div_height = 50;
   var padding = 1;
-  var bar_height = 20;
+  var bar_height = 16;
   var piece_height = 10;
   var piece_width = 10;
+  var text_size = 10;
   var piece_y = Math.floor(bar_height / 2) - Math.floor(piece_height / 2);
   var color_scale_10 = d3.scale.category10();
   var color_scale_20 = d3.scale.category20c();
@@ -63,17 +66,18 @@
   .data(files)
   .enter()
   .append("div")
-  .style("height", 100);
+  .style("height", div_height);
 
   var texts = divs.append("text")
   .text(function (d) { return d.path.join('/'); })
-  .attr("text-size", 30)
-  .attr("font", "sans-serif")
+  .style("font-size", text_size)
+  .style("font-family", "sans-serif")
+  .style("color", "#09C53B")
   .attr("y", 30);
 
   var svgs = divs.append("svg");
 
-  var bars = svgs.append("rect")
+  var vis_bars = svgs.append("rect")
   .attr("class", "bar")
   .attr("id", function (d, i) {
     return "#bar" + d.ip;
@@ -84,7 +88,8 @@
    return 10 * d.relevant.length + padding;
  })
   .attr("height", bar_height)
-  .attr("fill", "red")
+  .attr("fill", "white")
+  .attr("stroke", "gray")
   .attr("opacity", 0.2)
   .attr("id", function (d, i) {return ("#bar" + i); });
 
@@ -92,7 +97,7 @@
   console.log("o hai");
 
 
-  var pieces = svgs.selectAll("rect.piece")
+  var vis_pieces = svgs.selectAll("rect.piece")
   .data(function (d) { return d.relevant; })
   .enter()
   .append("rect")
@@ -103,30 +108,33 @@
   .attr("height", piece_height - padding)
   .attr("width", piece_width - padding)
   .attr("fill", "blue")
-  .attr("opacity", 0.1);
+  .attr("opacity", 0);
 };
 
 var vis_request = function (req_dict) {
 };
 
 var get_color = function (ip) {
-  // return peers[ip];
+  return peers[ip]["color"];
 };
 
 var vis_write = function (write_dict) {
- // var piece_index = write_dict.piece_index;
- // d3.selectAll("rect.piece" + piece_index)
- // .attr("fill", get_color(write_dict.peer.join(":")))
- // .transition()
- // .duration(1000)
- // .attr("opacity", 1);
+ var piece_index = write_dict.piece_index;
+ ip = write_dict.peer.join(":");
+ pieces[piece_index] = ip;
+ peers[ip].pieces.push(piece_index);
+ d3.selectAll("rect.piece" + piece_index)
+ .attr("fill", get_color(ip))
+ .transition()
+ .duration(1000)
+ .attr("opacity", 1);
 };
 
 var build_peer = function (peer_dict) {
-  // console.log('inside build_peer '+ colors[0]);
-  // var ip = peer_dict.address.join(":");
-  // var color = colors.shift();
-  // peers[ip] = color;
+  console.log('inside build_peer '+ colors[0]);
+  var ip = peer_dict.address.join(":");
+  var color = colors.shift();
+  peers[ip] = {"color": color, "pieces": []};
 };
 
 window.THEWEBSOCKET.onmessage = function (chunk) {
