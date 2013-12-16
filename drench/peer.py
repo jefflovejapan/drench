@@ -21,16 +21,13 @@ class Peer(object):
         self.sock.setblocking(True)
         self.reactor = reactor
         self.torrent = torrent
-        want_keys = ['city', 'region_name', 'country_name']
+        pudb.set_trace()
 
         # What am I trying to do?
         # I only want self.location to include keys and vals
         # if val for key in in_location
-        for key in want_keys:
-            for key, val in in_location.iteritems():
-                self.location[key] = in_location[key]
+        self.location = self.set_location(in_location)
 
-        pudb.set_trace()
         self.valid_indices = []
         self.bitfield = None
         self.max_size = 16 * 1024
@@ -47,6 +44,13 @@ class Peer(object):
         self.unchoke()  # Testing to see if this makes a difference
         activate_dict = {'kind': 'activate', 'address': self.getpeername()}
         self.torrent.switchboard.try_vis_handoff(activate_dict)
+
+    def set_location(self, in_loc):
+        out_loc = {}
+        for key in ['city', 'region_name', 'country_name']:
+            if key in in_loc:
+                out_loc[key] = in_loc[key]
+        return out_loc
 
     def fileno(self):
         return self.sock.fileno()
