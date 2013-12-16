@@ -3,6 +3,7 @@ from piece import Piece
 import struct
 import random
 import hashlib
+import pudb
 from math import ceil
 
 
@@ -24,7 +25,9 @@ class Peer(object):
         # What am I trying to do?
         # I only want self.location to include keys and vals
         # if val for key in in_location
-        self.location = self.set_location(in_location)
+        loc_list = ['city', 'region_name', 'country_name']
+        self.location = {key: in_location[key] for key in loc_list
+                         if key in in_location and in_location[key]}
 
         self.valid_indices = []
         self.bitfield = None
@@ -43,14 +46,6 @@ class Peer(object):
         activate_dict = {'kind': 'activate', 'address': self.getpeername(),
                          'location': self.location}
         self.torrent.switchboard.try_vis_handoff(activate_dict)
-
-    def set_location(self, in_loc):
-        loc_list = ['city', 'region_name', 'country_name']
-        out_loc = {}
-        for key in loc_list:
-            if key in in_loc:
-                out_loc[key] = in_loc[key]
-        return out_loc
 
     def fileno(self):
         return self.sock.fileno()
