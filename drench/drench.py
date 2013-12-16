@@ -21,6 +21,8 @@ DEFAULT_PORT = 55308
 DEFAULT_DIR = '~/Desktop'
 
 
+
+
 def get_path(file_path):
     if file_path[0] == '.':
         return os.path.abspath(file_path)
@@ -298,14 +300,11 @@ def main():
     argparser.add_argument('-v', '--visualizer',
                            help=('Colon-separated address and port for running'
                                  'visualizer. \ne.g., "127.0.0.1:8000'),
-                           default=None)
+                           default=None, type=valid_url)
     args = argparser.parse_args()  # Getting path from command line
     torrent_path = get_path(args.torrent_path)
     directory = get_path(args.directory)
-    visualizer = args.visualizer
-    test_request = requests.request("GET", visualizer)
-    if test_request.content != 200:
-        raise Exception("Visualizer address:port invalid")
+    visualizer = args.visualizer    
     port = args.port
     download_all = args.all
     mytorrent = Torrent(torrent_path, directory=directory, port=port,
@@ -314,6 +313,13 @@ def main():
         mytorrent.tracker_request()
         mytorrent.handshake_peers()
         mytorrent.reactor.event_loop()
+
+def valid_url(url):
+    a = requests.request("GET", url)
+    if a.status_code == 200:
+        return url
+    else:
+        raise Exception("Visualizer address:port invalid")
 
 if __name__ == '__main__':
     main()
