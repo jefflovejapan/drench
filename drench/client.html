@@ -146,8 +146,7 @@
       .duration(popover_duration)
       .attr("opacity", popover_opacity);
 
-// j is the index of the parent element
-    d3.select("g.tooltip")
+    var piece_text = d3.select("g.tooltip")
       .append("text")
       .attr("x", popover_internal_padding + popover_peer_square_size + popover_text_offset)
       .attr("y", popover_text_height + popover_internal_padding)
@@ -158,7 +157,7 @@
       .duration(popover_duration)
       .attr("opacity", popover_opacity);
     
-    d3.select("g.tooltip")
+    var peer_ip_text = d3.select("g.tooltip")
       .append("text")
       .attr("x", popover_internal_padding + popover_peer_square_size + popover_text_offset)
       .attr("y", 2 * (popover_text_height + popover_internal_padding))
@@ -169,7 +168,22 @@
       .duration(popover_duration)
       .attr("opacity", popover_opacity);
 
-    d3.select("g.tooltip")
+    var peer_location_text = d3.select("g.tooltip")
+      .append("text")
+      .attr("x", function () {
+        return popover_internal_padding + popover_peer_square_size +peer_ip_text.node().getComputedTextLength() + popover_text_offset;
+      })
+      .attr("y", 2 * (popover_text_height + popover_internal_padding))
+      // Location is in the peer's location property
+      .text( function () {
+        var loc_dict = peers[pieces[piece_id]].location
+        var geo_list = []
+        var want_list = []
+        return loc_dict.country_name;
+      }
+      );
+
+    var popover_rect = d3.select("g.tooltip")
       .append("rect")
       .attr("fill", piece_color)
       .attr("x", popover_internal_padding)
@@ -214,7 +228,8 @@ var vis_write = function (write_dict) {
 var build_peer = function (peer_dict) {
   var ip = peer_dict.address[0];
   var color = colors.shift();
-  peers[ip] = {"color": color, "pieces": []};
+  var location = peer_dict.location;
+  peers[ip] = {"color": color, "location": location, "pieces": []};
 };
 
 window.THEWEBSOCKET.onmessage = function (chunk) {
