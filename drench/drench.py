@@ -64,7 +64,7 @@ class VisListener(Listener):
 class Torrent(object):
 
     def __init__(self, torrent_path, directory='', port=55308,
-                 download_all=False):
+                 download_all=False, visualizer=None):
         torrent_dict = tparser.bdecode_file(torrent_path)
         self.torrent_dict = torrent_dict
         self.peer_dict = {}
@@ -77,6 +77,7 @@ class Torrent(object):
         self.hash_string = None
         self.queued_requests = []
         self.vis_write_sock = ''
+        self.visualizer = visualizer
         self.reactor = reactor.Reactor()
         self.reactor.add_listeners([PeerListener(torrent=self, port=7000),
                                     VisListener(torrent=self, port=8035)])
@@ -301,10 +302,14 @@ def main():
     args = argparser.parse_args()  # Getting path from command line
     torrent_path = get_path(args.torrent_path)
     directory = get_path(args.directory)
+    visualizer = args.visualizer
+    test_request = requests.request("GET", visualizer)
+    if test_request.content != 200:
+        raise Exception("Visualizer address:port invalid")
     port = args.port
     download_all = args.all
     mytorrent = Torrent(torrent_path, directory=directory, port=port,
-                        download_all=download_all)
+                        download_all=download_all, visualizer=visualizer)
     with mytorrent:
         mytorrent.tracker_request()
         mytorrent.handshake_peers()
