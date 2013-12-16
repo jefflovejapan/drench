@@ -197,14 +197,13 @@
       .attr("y", 2 * (popover_text_height + popover_internal_padding))
       // Location is in the peer's location property
       .text( function () {
-        var region_list = []
-        if (loc_dict.city !== '') {
-            region_list.push(loc_dict.city);
-        }
-        if (loc_dict.region_name !== ''){
-            region_list.push(loc_dict.region_name);
-        }
-        var loc_string = region_list.join(', ');
+        if (loc_dict.city !== '' && loc_dict.region_name !== '') {
+            return loc_dict.city + ', ' + loc_dict.region_name;
+        } else if (loc_dict.region_name !== ''){
+            return loc_dict.region_name;
+        } else if (loc_dict.city !== '') {
+            return loc_dict.city;
+        };
         return loc_string;
       })
       .attr("font-size", popover_text_height)
