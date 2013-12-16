@@ -126,6 +126,7 @@
   var piece_click = vis_pieces.on("click", function (d, i, j) {
     var piece_color = this.getAttribute("fill");
     var piece_id = this.getAttribute("class").replace("piece", "");
+    var loc_dict = peers[pieces[piece_id]].location
     var xPosition = parseFloat(d3.select(this).attr("x"));
     var yPosition = parseFloat(d3.select(this).attr("y"));
 
@@ -133,18 +134,19 @@
       .append("g")
       .attr("class", "tooltip")
       .attr("transform", "translate(" + (xPosition + mouse_pointer_width) + "," + yPosition + ")")
-      .append("rect")
-      .attr("x", 0)
-      .attr("y", 0)
-      .attr("width", popover_width)
-      .attr("height", popover_height)
-      .attr("fill", "white")
-      .attr("stroke", "black")
-      .attr("stroke-width", 1)
-      .attr("opacity", 0)
-      .transition()
-      .duration(popover_duration)
-      .attr("opacity", popover_opacity);
+        .append("rect")
+        .attr("class", "popover_main")
+        .attr("x", 0)
+        .attr("y", 0)
+        .attr("width", popover_width)
+        .attr("height", popover_height)
+        .attr("fill", "white")
+        .attr("stroke", "black")
+        .attr("stroke-width", 1)
+        .attr("opacity", 0)
+        .transition()
+        .duration(popover_duration)
+        .attr("opacity", popover_opacity);
 
     var piece_text = d3.select("g.tooltip")
       .append("text")
@@ -168,23 +170,54 @@
       .duration(popover_duration)
       .attr("opacity", popover_opacity);
 
-    var peer_location_text = d3.select("g.tooltip")
-      .append("text")
+    var peer_location_box = d3.select("g.tooltip")
+      .append("g")
+      .attr("class", "location_text")
+      .attr("transform", "translate(" + (peer_ip_text[0][0].getComputedTextLength() + (3 * popover_internal_padding) + popover_peer_square_size) + ",0)")
+
+    var country_text = peer_location_box.append("text")
       .attr("x", function () {
-        return popover_internal_padding + popover_peer_square_size +peer_ip_text.node().getComputedTextLength() + popover_text_offset;
+        return popover_internal_padding + popover_text_offset;
+      })
+      .attr("y", popover_text_height + popover_internal_padding)
+      // Location is in the peer's location property
+      .text(loc_dict.country_name)
+      .attr("font-size", popover_text_height)
+      .attr("opacity", 0)
+      .transition()
+      .duration(popover_duration)
+      .attr("opacity", popover_opacity);
+
+      var region_text = peer_location_box.append("text");
+
+      if (loc_dict.region_name !== '' || loc_dict.city !== '') {
+        region_text.attr("x", function () {
+        return popover_internal_padding + popover_text_offset;
       })
       .attr("y", 2 * (popover_text_height + popover_internal_padding))
       // Location is in the peer's location property
       .text( function () {
-        var loc_dict = peers[pieces[piece_id]].location
-        var geo_list = []
-        var want_list = []
-        return loc_dict.country_name;
-      }
-      );
+        var region_list = []
+        if (loc_dict.city !== '') {
+            region_list.push(loc_dict.city);
+        }
+        if (loc_dict.region_name !== ''){
+            region_list.push(loc_dict.region_name);
+        }
+        var loc_string = region_list.join(', ');
+        return loc_string;
+      })
+      .attr("font-size", popover_text_height)
+      .attr("opacity", 0)
+      .transition()
+      .duration(popover_duration)
+      .attr("opacity", popover_opacity);
+    }
 
-    var popover_rect = d3.select("g.tooltip")
+
+    var popover_piece_square = d3.select("g.tooltip")
       .append("rect")
+      .attr("class", "piece_square")
       .attr("fill", piece_color)
       .attr("x", popover_internal_padding)
       .attr("y", (popover_height / 2) - (popover_peer_square_size / 2))
@@ -194,6 +227,17 @@
       .transition()
       .duration(popover_duration)
       .attr("opacity", 1);
+
+    var adjust_box_size = d3.select("rect.popover_main")
+        .attr("width", function () {
+          var total_width = popover_internal_padding + popover_peer_square_size + (3 * popover_internal_padding) +
+            peer_ip_text[0][0].getComputedTextLength() +
+            d3.max([country_text[0][0].getComputedTextLength(),
+                   region_text[0][0].getComputedTextLength()]) +
+            (4 * popover_internal_padding);
+          return total_width;
+        });
+
   });
 
 

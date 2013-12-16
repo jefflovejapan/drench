@@ -3,7 +3,6 @@ from piece import Piece
 import struct
 import random
 import hashlib
-import pudb
 from math import ceil
 
 
@@ -25,7 +24,6 @@ class Peer(object):
         # What am I trying to do?
         # I only want self.location to include keys and vals
         # if val for key in in_location
-        pudb.set_trace()
         self.location = self.set_location(in_location)
 
         self.valid_indices = []
