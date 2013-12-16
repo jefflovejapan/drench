@@ -237,11 +237,9 @@
             (4 * popover_internal_padding);
           return total_width;
         });
-
   });
 
-
-  var mouseout = vis_pieces.on("mouseout", function (d, i, j)
+  var mouseout = vis_pieces.on("mouseout", function ()
   {
       d3.selectAll("g.tooltip")
         .remove();
