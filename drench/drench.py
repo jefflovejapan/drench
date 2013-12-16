@@ -21,7 +21,12 @@ DEFAULT_PORT = 55308
 DEFAULT_DIR = '~/Desktop'
 
 
-
+def connect_vis(address):
+    ip, port = address.split(':')
+    vis_addr_tuple = (ip, int(port))
+    mysock = socket.socket()
+    mysock.connect(vis_addr_tuple)
+    return mysock
 
 def get_path(file_path):
     if file_path[0] == '.':
@@ -79,7 +84,7 @@ class Torrent(object):
         self.hash_string = None
         self.queued_requests = []
         self.vis_write_sock = ''
-        self.visualizer = visualizer
+        self.vis_socket = connect_vis(visualizer) if visualizer else None
         self.reactor = reactor.Reactor()
         self.reactor.add_listeners([PeerListener(torrent=self, port=7000),
                                     VisListener(torrent=self, port=8035)])
@@ -300,7 +305,7 @@ def main():
     argparser.add_argument('-v', '--visualizer',
                            help=('Colon-separated address and port for running'
                                  'visualizer. \ne.g., "127.0.0.1:8000'),
-                           default=None, type=valid_url)
+                           default=None, type=open_socket)
     args = argparser.parse_args()  # Getting path from command line
     torrent_path = get_path(args.torrent_path)
     directory = get_path(args.directory)
@@ -314,12 +319,14 @@ def main():
         mytorrent.handshake_peers()
         mytorrent.reactor.event_loop()
 
-def valid_url(url):
-    a = requests.request("GET", url)
-    if a.status_code == 200:
-        return url
-    else:
-        raise Exception("Visualizer address:port invalid")
+def open_socket(url):
+    split_url = url.split(':')
+    split_url[1] = int(split_url[1])
+    split_url_tuple = tuple(split_url)
+    mysock = create_connection(split_url_tuple, 2)
+    mysock.close()
+    return url
+
 
 if __name__ == '__main__':
     main()
