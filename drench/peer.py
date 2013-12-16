@@ -3,6 +3,7 @@ from piece import Piece
 import struct
 import random
 import hashlib
+import pudb
 from math import ceil
 
 
@@ -14,12 +15,22 @@ REQUEST_SIZE = 2 ** 14
 class Peer(object):
     # Can't initialize without a dictionary. Handshake
     # takes place using socket before peer init
-    def __init__(self, sock, reactor, torrent):
+    def __init__(self, sock, reactor, torrent, in_location):
         print 'inside peer.__init__'
         self.sock = sock
         self.sock.setblocking(True)
         self.reactor = reactor
         self.torrent = torrent
+        want_keys = ['city', 'region_name', 'country_name']
+
+        # What am I trying to do?
+        # I only want self.location to include keys and vals
+        # if val for key in in_location
+        for key in want_keys:
+            for key, val in in_location.iteritems():
+                self.location[key] = in_location[key]
+
+        pudb.set_trace()
         self.valid_indices = []
         self.bitfield = None
         self.max_size = 16 * 1024

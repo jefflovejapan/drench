@@ -1,3 +1,5 @@
+"""Geo lookup provided courtesy of freegeoip.net"""
+
 import argparse
 import requests
 import socket
@@ -8,6 +10,8 @@ import peer
 import time
 import os
 import random
+import json
+import pudb
 from string import ascii_letters, digits
 from listener import Listener
 from switchboard import Switchboard
@@ -251,8 +255,10 @@ class Torrent(object):
         Creates a new peer object for a nvalid socket and adds it to reactor's
         listen list
         '''
-
-        tpeer = peer.Peer(sock, self.reactor, self)
+        location_json = requests.request("GET", "http://freegeoip.net/json/"
+                                         + sock.getpeername()[0]).content
+        location = json.loads(location_json)
+        tpeer = peer.Peer(sock, self.reactor, self, location)
         self.peer_dict[sock] = tpeer
         self.reactor.select_list.append(tpeer)
 
