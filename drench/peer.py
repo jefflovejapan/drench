@@ -21,7 +21,6 @@ class Peer(object):
         self.sock.setblocking(True)
         self.reactor = reactor
         self.torrent = torrent
-        pudb.set_trace()
 
         # What am I trying to do?
         # I only want self.location to include keys and vals
@@ -42,12 +41,14 @@ class Peer(object):
         self.ischoking = True
         self.isinterested = False
         self.unchoke()  # Testing to see if this makes a difference
-        activate_dict = {'kind': 'activate', 'address': self.getpeername()}
+        activate_dict = {'kind': 'activate', 'address': self.getpeername(),
+                         'location': self.location}
         self.torrent.switchboard.try_vis_handoff(activate_dict)
 
     def set_location(self, in_loc):
+        loc_list = ['city', 'region_name', 'country_name']
         out_loc = {}
-        for key in ['city', 'region_name', 'country_name']:
+        for key in loc_list:
             if key in in_loc:
                 out_loc[key] = in_loc[key]
         return out_loc
