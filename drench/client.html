@@ -35,14 +35,22 @@
   var div_height = 50;
   var padding = 1;
   var bar_height = 16;
+  var bar_offset = 10;
   var piece_height = 10;
   var piece_width = 10;
   var piece_duration = 500;
-  var text_size = 10;
+  var text_height = 10;
   var parent_svg;
   var piece_y = Math.floor(bar_height / 2) - Math.floor(piece_height / 2);
-  var popover_height = div_height * 0.8;
-  var popover_width = popover_height * 3/2;
+  var mouse_pointer_width = 15;
+  var popover_height = div_height - (2 * text_height);
+  var popover_width = popover_height * 3;
+  var popover_text_height = 10;
+  var popover_internal_padding = 2;
+  var popover_duration = 300;
+  var popover_opacity = 0.9;
+  var popover_box_offset = padding;
+  var popover_peer_square_size = 20;
   var color_scale_10 = d3.scale.category10();
   var color_scale_20 = d3.scale.category20c();
   var colors = build_colors();
@@ -74,15 +82,16 @@
 
   var texts = divs.append("text")
   .text(function (d) { return d.path.join('/'); })
-  .style("font-size", text_size)
+  .style("font-size", text_height)
   .style("font-family", "sans-serif")
   .style("color", "#09C53B")
   .attr("y", 30);
 
   var svgs = divs.append("svg");
 
-  var vis_bars = svgs.append("rect")
+  var vis_bars = svgs.append("g")
   .attr("class", "bar")
+  .attr("transform", "translate(0," + bar_offset + ")")
   .attr("id", function (d, i) {
     return "#bar" + d.ip;
   })
@@ -114,8 +123,7 @@
   .attr("opacity", 0)
 
   var piece_click = vis_pieces.on("click", function (d, i, j) {
-    console.log("this", this);
-    console.log("d", d);
+    var piece_color = this.getAttribute("fill");
     var xPosition = parseFloat(d3.select(this).attr("x"));
     var yPosition = parseFloat(d3.select(this).attr("y"));
     console.log("xPosition: " + xPosition + " yPosition: " + yPosition + " parent_svg: " + parent_svg);
@@ -123,10 +131,10 @@
     d3.select(svgs[0][j])
       .append("g")
       .attr("class", "tooltip")
-      .attr("transform", "translate(" + xPosition + "," + yPosition + ")")
+      .attr("transform", "translate(" + (xPosition + mouse_pointer_width) + "," + yPosition + ")")
       .append("rect")
       .attr("x", 0)
-      .attr("y", -div_height / 2)
+      .attr("y", 0)
       .attr("width", popover_width)
       .attr("height", popover_height)
       .attr("fill", "white")
@@ -134,14 +142,34 @@
       .attr("stroke-width", 1)
       .attr("opacity", 0)
       .transition()
-      .duration(300)
-      .attr("opacity", 1);
+      .duration(popover_duration)
+      .attr("opacity", popover_opacity);
 
 // j is the index of the parent element
     d3.select("g.tooltip")
       .append("text")
-      .text(d);
+      .attr("x", popover_peer_square_size + (2 * popover_internal_padding))
+      .attr("y", popover_text_height + popover_internal_padding)
+      .attr("font-size", popover_text_height)
+      .text(d)
+      .attr("opacity", 0)
+      .transition()
+      .duration(popover_duration)
+      .attr("opacity", popover_opacity);
+
+    d3.select("g.tooltip")
+      .append("rect")
+      .attr("fill", piece_color)
+      .attr("x", popover_internal_padding)
+      .attr("y", popover_internal_padding)
+      .attr("width", popover_peer_square_size)
+      .attr("height", popover_peer_square_size)
+      .attr("opacity", 0)
+      .transition()
+      .duration(popover_duration)
+      .attr("opacity", popover_opacity);
   });
+
 
   var mouseout = vis_pieces.on("mouseout", function (d, i, j)
   {
