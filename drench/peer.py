@@ -249,6 +249,8 @@ class Peer(object):
 
                 # Write out
                 byte_index = piece_index * self.torrent.piece_length
+                self.piece = self.init_piece()
+                self.request_all()
                 self.torrent.switchboard.write(byte_index, piece_bytes)
                 self.torrent.switchboard.mark_off(piece_index)
                 print self.torrent.switchboard.bitfield
@@ -257,8 +259,8 @@ class Peer(object):
                     self.reactor.is_running = False
             else:
                 print "Bad data -- hash doesn't match. Discarding piece."
-            self.piece = self.init_piece()
-            self.request_all()
+                self.piece = self.init_piece()
+                self.request_all()
 
     def pcancel(self):
         print 'pcancel'
