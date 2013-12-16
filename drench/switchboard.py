@@ -161,7 +161,7 @@ def build_bitfield(heads_and_tails=[], num_pieces=0):
 
 class Switchboard(object):
     def __init__(self, dirname='', file_list=[], piece_length=0, num_pieces=0,
-                 multifile=False, download_all=False):
+                 multifile=False, download_all=False, vis_socket=None):
         self.dirname = dirname
         self.file_list = copy.deepcopy(file_list)
         self.piece_length = piece_length
@@ -170,6 +170,7 @@ class Switchboard(object):
                             else [0])
 
         self.download_all = download_all
+        self.vis_socket = vis_socket
 
         if self.download_all:
             self.want_file_pos = range(len(self.file_list))
@@ -180,9 +181,9 @@ class Switchboard(object):
 
         self.outfiles = []
         self.queued_messages = []
-        self.vis_write_sock = None
         if self.dirname:
-            os.mkdir(self.dirname)
+            if not os.path.exists(self.dirname):
+                os.mkdir(self.dirname)
             os.chdir(os.path.join(os.getcwd(), self.dirname))
         want_files = [self.file_list[index] for index in self.want_file_pos]
         if multifile:
@@ -230,9 +231,7 @@ class Switchboard(object):
     def set_piece_index(self, piece_index):
         self.piece_index = piece_index
 
-    def set_sock(self, sock):
-        self.vis_write_sock = sock
-        self.switchboard.vis_write_sock = sock
+
 
     # TODO -- refactor write to simply map from a piece index to a set
     # of files and byte indices so I can implement seeding.
@@ -310,16 +309,17 @@ class Switchboard(object):
         Send to the visualizer (if there is one) or enqueue for later
         '''
         try:
-            self.vis_write_sock.send(json.dumps(data_dict))
+            self.vis_socket.send(json.dumps(data_dict))
         except:
+            print 'queued up fresh message'
             self.queued_messages.append(data_dict)
 
     def send_all_updates(self):
-        assert self.vis_write_sock
+        assert self.vis_sock
         while self.queued_messages:
             # TODO -- ask if this makes sense
             next_message = json.dumps(self.queued_messages.pop(0)) + '\r\n\r\n'
-            self.vis_write_sock.send(next_message)
+            self.vis_sock.send(next_message)
 
     def mark_off(self, index):
         self.bitfield[index] = False

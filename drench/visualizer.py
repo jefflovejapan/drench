@@ -88,9 +88,14 @@ class MyWSFactory(protocol.Factory):
         print WebSocket.websockets
         return ws
 
-point = endpoints.TCP4ClientEndpoint(reactor, "127.0.0.1", 8035)
+class BitClientFactory(protocol.Factory):
+    def buildProtocol(self, addr):
+        print 'building a BitClient object'
+        bc = BitClient()
+        return bc
+
 bit_client = BitClient()
-d = endpoints.connectProtocol(point, bit_client)
+reactor.listenTCP(8002, BitClientFactory())
 reactor.listenTCP(8000, MyHTTPFactory())
 reactor.listenTCP(8001, txws.WebSocketFactory(MyWSFactory()))
 reactor.run()

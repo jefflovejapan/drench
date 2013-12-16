@@ -84,10 +84,12 @@ class Torrent(object):
         self.hash_string = None
         self.queued_requests = []
         self.vis_write_sock = ''
-        self.vis_socket = connect_vis(visualizer) if visualizer else None
         self.reactor = reactor.Reactor()
         self.reactor.add_listeners([PeerListener(torrent=self, port=7000),
                                     VisListener(torrent=self, port=8035)])
+
+        # Try to connect to visualization server
+        vis_socket = connect_vis(visualizer) if visualizer else None
         if directory:
             os.chdir(directory)
         if 'files' in self.torrent_dict['info']:
@@ -116,7 +118,7 @@ class Torrent(object):
                                        file_list=file_list, piece_length=
                                        self.piece_length, num_pieces=
                                        self.num_pieces, multifile=multifile,
-                                       download_all=download_all)
+                                       download_all=download_all, vis_socket=vis_socket)
 
     @property
     def piece_length(self):
@@ -323,7 +325,7 @@ def open_socket(url):
     split_url = url.split(':')
     split_url[1] = int(split_url[1])
     split_url_tuple = tuple(split_url)
-    mysock = create_connection(split_url_tuple, 2)
+    mysock = socket.create_connection(split_url_tuple, 2)
     mysock.close()
     return url
 
