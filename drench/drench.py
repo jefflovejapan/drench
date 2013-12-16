@@ -294,7 +294,10 @@ def main():
     argparser.add_argument('-a', '--all', action='store_true',
                            help=('Set flag to download all files in torrent'),
                            default=False)
-    argparser.add_argument('-v', '--visualizer', help='Address and port (colon-separated) where your running visualizer lives', default=None)
+    argparser.add_argument('-v', '--visualizer',
+                           help=('Colon-separated address and port for running'
+                                 'visualizer. \ne.g., "127.0.0.1:8000'),
+                           default=None)
     args = argparser.parse_args()  # Getting path from command line
     torrent_path = get_path(args.torrent_path)
     directory = get_path(args.directory)
