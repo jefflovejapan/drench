@@ -334,24 +334,3 @@ class Switchboard(object):
     def close(self):
         for i in self.outfiles:
             i.close()
-
-
-def file_starts_test():
-    from tparser import bdecode_file
-    myinfo = bdecode_file('/Users/jeffblagdon/Desktop/dorian.torrent')['info']
-    some_file_starts = get_file_starts(myinfo['files'])
-    piece_length = myinfo['piece length']
-    piece_index = 836
-    byte_index = piece_length * piece_index
-    rightmost = get_rightmost_index(byte_index=byte_index,
-                                    file_starts=some_file_starts)
-    file_internal_index = byte_index - some_file_starts[rightmost]
-    assert file_internal_index >= 0
-
-
-def all_subdirs_test():
-    print all_subdirs(os.getcwd())
-
-
-if __name__ == '__main__':
-    all_subdirs_test()
