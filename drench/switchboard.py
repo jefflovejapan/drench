@@ -171,6 +171,7 @@ class Switchboard(object):
 
         self.download_all = download_all
         self.vis_socket = vis_socket
+        self.encoder = json.JSONEncoder()
 
         if self.download_all:
             self.want_file_pos = range(len(self.file_list))
@@ -231,13 +232,10 @@ class Switchboard(object):
     def set_piece_index(self, piece_index):
         self.piece_index = piece_index
 
-
-
     # TODO -- refactor write to simply map from a piece index to a set
     # of files and byte indices so I can implement seeding.
     # Write should contain a call to another method that returns
     # files and byte ranges
-
     def write(self, byte_index, block):
 
         # TODO -- is there a way to catch this exception earlier?
@@ -302,24 +300,22 @@ class Switchboard(object):
         init_dict['files'] = self.file_list
         init_dict['heads_and_tails'] = self.heads_and_tails
         init_dict['num_pieces'] = self.num_pieces
-        self.try_vis_handoff(init_dict)
+        self.broadcast(init_dict)
 
-    def try_vis_handoff(self, data_dict):
+    def broadcast(self, data_dict):
         '''
         Send to the visualizer (if there is one) or enqueue for later
         '''
-        try:
-            self.vis_socket.send(json.dumps(data_dict))
-        except:
-            print 'queued up fresh message'
+        if self.vis_socket:
             self.queued_messages.append(data_dict)
+            self.send_all_updates()
 
     def send_all_updates(self):
-        assert self.vis_sock
         while self.queued_messages:
             # TODO -- ask if this makes sense
-            next_message = json.dumps(self.queued_messages.pop(0)) + '\r\n\r\n'
-            self.vis_sock.send(next_message)
+            next_message = (self.encoder.encode(self.queued_messages.pop(0)) +
+                            '\r\n\r\n')
+            self.vis_socket.send(next_message)
 
     def mark_off(self, index):
         self.bitfield[index] = False

@@ -44,7 +44,7 @@ class Peer(object):
         self.unchoke()  # Testing to see if this makes a difference
         activate_dict = {'kind': 'activate', 'address': self.getpeername(),
                          'location': self.location}
-        self.torrent.switchboard.try_vis_handoff(activate_dict)
+        self.torrent.switchboard.broadcast(activate_dict)
 
     def fileno(self):
         return self.sock.fileno()
@@ -235,7 +235,7 @@ class Peer(object):
                 # Take care of visualizer stuff
                 piece_dict = {'kind': 'piece', 'peer': self.sock.getpeername(),
                               'piece_index': piece_index}
-                self.torrent.switchboard.try_vis_handoff(piece_dict)
+                self.torrent.switchboard.broadcast(piece_dict)
 
                 print ('writing piece {}. Length is '
                        '{}').format(repr(piece_bytes)[:10] + '...',
@@ -310,7 +310,7 @@ class Peer(object):
         request_dict = {'kind': 'request',
                         'peer': self.sock.getpeername(),
                         'piece': self.piece.index}
-        self.torrent.switchboard.try_vis_handoff(request_dict)
+        self.torrent.switchboard.broadcast(request_dict)
         print 'next request:', request_dict
 
     def get_last_block_size(self):
