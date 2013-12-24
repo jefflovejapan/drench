@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="drench",
-    version="0.0.9",
+    version="0.0.10",
     install_requires=['bitarray>=0.8.1', 'requests>=2.0.0'],
     packages=['drench'],
 
