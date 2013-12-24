@@ -28,6 +28,7 @@ def connect_vis(address):
     mysock.connect(vis_addr_tuple)
     return mysock
 
+
 def get_path(file_path):
     if file_path[0] == '.':
         return os.path.abspath(file_path)
@@ -118,7 +119,8 @@ class Torrent(object):
                                        file_list=file_list, piece_length=
                                        self.piece_length, num_pieces=
                                        self.num_pieces, multifile=multifile,
-                                       download_all=download_all, vis_socket=vis_socket)
+                                       download_all=download_all,
+                                       vis_socket=vis_socket)
 
     @property
     def piece_length(self):
@@ -311,7 +313,7 @@ def main():
     args = argparser.parse_args()  # Getting path from command line
     torrent_path = get_path(args.torrent_path)
     directory = get_path(args.directory)
-    visualizer = args.visualizer    
+    visualizer = args.visualizer
     port = args.port
     download_all = args.all
     mytorrent = Torrent(torrent_path, directory=directory, port=port,
@@ -320,6 +322,7 @@ def main():
         mytorrent.tracker_request()
         mytorrent.handshake_peers()
         mytorrent.reactor.event_loop()
+
 
 def open_socket(url):
     split_url = url.split(':')
