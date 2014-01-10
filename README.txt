@@ -7,7 +7,7 @@ The client works with [vis](https://github.com/jefflovejapan/vis), a Twisted web
 
 ##Install
 
-The preferred way to install Drench is will be with [`pip`](http://www.pip-installer.org/en/latest/installing.html), which will let you run the following command from the terminal:
+The preferred way to install Drench is with [`pip`](http://www.pip-installer.org/en/latest/installing.html), which will let you run the following command from the terminal:
 
 `pip install drench`
 
