@@ -189,7 +189,7 @@ class Torrent(object):
                                   params=payload)
 
         # Decoding response from tracker
-        self.tracker_response = tparser.bdecode(self.r.text.encode('latin-1'))
+        self.tracker_response = tparser.bdecode(self.r.content)
         self.get_peer_ips()
 
     def get_peer_ips(self):
